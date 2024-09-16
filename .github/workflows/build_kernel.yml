@@ -6,27 +6,27 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/aosp-realm/kernel_xiaomi_sm8250.git'
+        default: 'https://github.com/GXC2356/platform_kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: '14'
+        default: 'main'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'perf'
+        default: 'Skyline-Rembat'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
-        default: 'apollo_defconfig vendor/debugfs.config'
+        default: 'vayu_user_defconfig'
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain including branch"
         required: true
-        default: 'https://gitlab.com/dogpoopy/clang-r487747c.git -b main'
+        default: 'https://github.com/llvm/llvm-project -b main'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/aosp-realm/AnyKernel3.git -b master'
+        default: 'https://github.com/osm0sis/AnyKernel3 -b master'
 
 jobs:
   Kernel:
