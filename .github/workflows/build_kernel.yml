@@ -18,7 +18,7 @@ on:
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
-        default: 'vayu_user_defconfig vendor/debugfs.config vendor/sm8150-perf_defconfig'
+        default: 'vayu_user_defconfig'
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain including branch"
         required: true
