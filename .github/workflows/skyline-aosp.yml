@@ -1,5 +1,4 @@
-name: Skyline Aosp
-
+ name: Skyline Aosp
 on:
   workflow_dispatch:
     inputs:
@@ -65,7 +64,7 @@ jobs:
          anykernel="${{ github.workspace }}/anykernel"
          clang_dir="${{ github.workspace }}/toolchain"
          kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
-         zip_name="${kernel_name}$(date)").zip"
+         zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
          arch="arm64"
          
          export PATH="${clang_dir}/bin:$PATH"
