@@ -5,7 +5,7 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/GXC2356/platform_kernel_xiaomi_vayu.git'
+        default: 'https://github.com/muhdhaniff55/platform_kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
