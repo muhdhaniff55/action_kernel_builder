@@ -22,7 +22,7 @@ on:
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain including branch"
         required: true
-        default: 'https://github.com/llvm/llvm-project.git -b main'
+        default: 'https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86t -b main/clang-r536225'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
