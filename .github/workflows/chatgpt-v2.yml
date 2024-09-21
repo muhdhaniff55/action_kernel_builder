@@ -13,7 +13,7 @@ on:
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'SkylineKernel_vayu_'
+        default: 'SkylineKSU_WeebX_'
       CONFIG_FILE:
         description: 'Config file (space-separated)'
         required: true
@@ -21,11 +21,11 @@ on:
       TOOLCHAIN_URL:
         description: "Toolchain clone URL or tarball"
         required: true
-        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225.git -b 15.0'
+        default: 'https://github.com/XSans0/WeebX-Clang/releases/download/WeebX-Clang-20.0.0git-release/WeebX-Clang-20.0.0git.tar.gz'
       ANYKERNEL:
         description: "AnyKernel clone URL"
         required: true
-        default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
+        default: 'https://github.com/muhdhaniff55/AnyKernel3 -b master'
 
 jobs:
   Kernel:
