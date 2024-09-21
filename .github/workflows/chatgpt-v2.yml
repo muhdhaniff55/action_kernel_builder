@@ -1,0 +1,97 @@
+name: ChatGPT
+on:
+  workflow_dispatch:
+    inputs:
+      KERNEL_SOURCE:
+        description: 'Kernel source URL'
+        required: true
+        default: 'https://github.com/muhdhaniff55/platform_kernel_xiaomi_vayu.git'
+      KERNEL_BRANCH:
+        description: 'Kernel branch'
+        required: true
+        default: 'KernelSU'
+      KERNEL_NAME:
+        description: 'Kernel/zip name'
+        required: true
+        default: 'SkylineKernel_vayu_'
+      CONFIG_FILE:
+        description: 'Config file (space-separated)'
+        required: true
+        default: 'vayu_user_defconfig'
+      TOOLCHAIN_URL:
+        description: "Toolchain clone URL or tarball"
+        required: true
+        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225.git -b 15.0'
+      ANYKERNEL:
+        description: "AnyKernel clone URL"
+        required: true
+        default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
+
+jobs:
+  Kernel:
+    runs-on: ubuntu-latest
+    permissions: write-all
+
+    steps:
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm clang \
+            curl git zip unzip tar gzip bzip2
+
+      - name: Clone Kernel Source
+        run: git clone --single-branch --depth=1 ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
+
+      - name: Download Toolchain
+        run: |
+          if [[ ${{ github.event.inputs.TOOLCHAIN_URL }} == *".tar"* ]]; then
+            curl -L -o toolchain.tar.gz ${{ github.event.inputs.TOOLCHAIN_URL }}
+            tar -xzf toolchain.tar.gz -C ${{ github.workspace }}
+          else
+            git clone --single-branch --depth=1 ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
+          fi
+
+      - name: Start Compilation
+        run: |
+          set -e
+          objdir="${{ github.workspace }}/out"
+          anykernel="${{ github.workspace }}/anykernel"
+          clang_dir="${{ github.workspace }}/toolchain" # Adjust this based on how you extracted the tar if necessary
+          kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
+          zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
+          arch="arm64"
+          
+          export PATH="${clang_dir}/bin:$PATH"
+
+          make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc)
+
+          make -j$(nproc) O=${objdir} ARCH=${arch} CC=clang \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            AR=llvm-ar LD=ld.lld
+
+          if [[ -f ${objdir}/arch/arm64/boot/Image && -f ${objdir}/arch/arm64/boot/dtbo.img ]]; then
+            git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+            cp ${objdir}/arch/arm64/boot/Image ${objdir}/arch/arm64/boot/dtbo.img "${{ github.workspace }}"
+
+            mv ${objdir}/arch/arm64/boot/Image "$anykernel/Image"
+            mv ${objdir}/arch/arm64/boot/dtbo.img "$anykernel/dtbo.img"
+            cd "$anykernel"
+            zip -r AnyKernel.zip *
+            mv AnyKernel.zip "$zip_name"
+            mv "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
+            echo "Kernel build completed: ${zip_name}"
+          else
+            echo "ERROR: Kernel compilation failed!"
+            exit 1
+          fi
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ github.workspace }}/*.img
+            ${{ github.workspace }}/*.zip
+          name: ${{ github.event.inputs.KERNEL_NAME }}
+          tag_name: ${{ github.run_id }}
+          body: |
+            Released on $(date +'%B %-d, %Y %H:%M')
