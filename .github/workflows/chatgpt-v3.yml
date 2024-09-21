@@ -5,19 +5,19 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/muhdhaniff55/platform_kernel_xiaomi_vayu.git'
+        default: 'https://github.com/AnymoreProject/kernel_xiaomi_vayu_upstream.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'KernelSU'
+        default: 'ksu'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'SkylineKernel_vayu_'
+        default: 'AnymoreKSU'
       CONFIG_FILE:
         description: 'Config file (multiple configs separated by space)'
         required: true
-        default: 'vayu_user_defconfig'
+        default: 'vayu_defconfig'
       TOOLCHAIN_URL:
         description: "Toolchain URL including branch"
         required: true
@@ -25,7 +25,7 @@ on:
       ANYKERNEL:
         description: "AnyKernel URL including branch"
         required: true
-        default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
+        default: 'https://github.com/AnymoreProject/AnyKernel3.git -b master'
 
 jobs:
   Kernel:
