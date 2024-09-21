@@ -19,9 +19,13 @@ on:
         required: true
         default: 'vayu_defconfig'
       TOOLCHAIN_URL:
-        description: "Toolchain URL including branch"
+        description: "Toolchain URL"
         required: true
-        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225.git -b 15.0'
+        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225.git'
+      TOOLCHAIN_BRANCH:
+        description: "Toolchain branch"
+        required: true
+        default: '15.0'
       ANYKERNEL:
         description: "AnyKernel URL including branch"
         required: true
@@ -50,25 +54,21 @@ jobs:
         run: |
           TOOLCHAIN_DIR="${{ github.workspace }}/toolchain"
           mkdir -p "${TOOLCHAIN_DIR}"
-          TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
           
-          # Extracting the branch if specified
-          if [[ "$TOOLCHAIN_URL" == *"-b "* ]]; then
-            BRANCH=${TOOLCHAIN_URL##*-b }
-            REPO_URL=${TOOLCHAIN_URL%-b *}  # Get URL without the branch
-            git clone --single-branch --depth=1 --no-tags "$REPO_URL" -b "$BRANCH" "$TOOLCHAIN_DIR"
-          else
-            if [[ "$TOOLCHAIN_URL" == *.tar.gz ]]; then
-              wget -O "${TOOLCHAIN_DIR}/toolchain.tar.gz" "$TOOLCHAIN_URL"
-              tar -xzf "${TOOLCHAIN_DIR}/toolchain.tar.gz" -C "${TOOLCHAIN_DIR}" --strip-components=1
-            elif [[ "$TOOLCHAIN_URL" == *.zip ]]; then
-              wget -O "${TOOLCHAIN_DIR}/toolchain.zip" "$TOOLCHAIN_URL"
-              unzip -d "${TOOLCHAIN_DIR}" "${TOOLCHAIN_DIR}/toolchain.zip"
-            else
-              git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" "$TOOLCHAIN_DIR"
-            fi
-          fi
+          TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
+          TOOLCHAIN_BRANCH="${{ github.event.inputs.TOOLCHAIN_BRANCH }}"
 
+          # Check if the URL points to a tar.gz or zip file
+          if [[ "$TOOLCHAIN_URL" == *.tar.gz ]]; then
+            wget -O "${TOOLCHAIN_DIR}/toolchain.tar.gz" "$TOOLCHAIN_URL"
+            tar -xzf "${TOOLCHAIN_DIR}/toolchain.tar.gz" -C "${TOOLCHAIN_DIR}" --strip-components=1
+          elif [[ "$TOOLCHAIN_URL" == *.zip ]]; then
+            wget -O "${TOOLCHAIN_DIR}/toolchain.zip" "$TOOLCHAIN_URL"
+            unzip -d "${TOOLCHAIN_DIR}" "${TOOLCHAIN_DIR}/toolchain.zip"
+          else
+            # Perform a git clone if it’s a repository
+            git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" -b "$TOOLCHAIN_BRANCH" "$TOOLCHAIN_DIR"
+          fi
 
       - name: Set up Cache
         id: cache-out
