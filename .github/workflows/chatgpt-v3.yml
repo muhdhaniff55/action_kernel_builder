@@ -48,18 +48,27 @@ jobs:
 
       - name: Clone Toolchain
         run: |
-          # Clone or download the toolchain based on the URL provided
           TOOLCHAIN_DIR="${{ github.workspace }}/toolchain"
           mkdir -p "${TOOLCHAIN_DIR}"
-          if [[ "${{ github.event.inputs.TOOLCHAIN_URL }}" == *.tar.gz ]]; then
-            wget -O "${TOOLCHAIN_DIR}/toolchain.tar.gz" "${{ github.event.inputs.TOOLCHAIN_URL }}"
-            tar -xzf "${TOOLCHAIN_DIR}/toolchain.tar.gz" -C "${TOOLCHAIN_DIR}" --strip-components=1
-          elif [[ "${{ github.event.inputs.TOOLCHAIN_URL }}" == *.zip ]]; then
-            wget -O "${TOOLCHAIN_DIR}/toolchain.zip" "${{ github.event.inputs.TOOLCHAIN_URL }}"
-            unzip -d "${TOOLCHAIN_DIR}" "${TOOLCHAIN_DIR}/toolchain.zip"
+          TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
+          
+          # Extracting the branch if specified
+          if [[ "$TOOLCHAIN_URL" == *"-b "* ]]; then
+            BRANCH=${TOOLCHAIN_URL##*-b }
+            REPO_URL=${TOOLCHAIN_URL%-b *}  # Get URL without the branch
+            git clone --single-branch --depth=1 --no-tags "$REPO_URL" -b "$BRANCH" "$TOOLCHAIN_DIR"
           else
-            git clone --single-branch --depth=1 --no-tags "${{ github.event.inputs.TOOLCHAIN_URL }}" "${TOOLCHAIN_DIR}"
+            if [[ "$TOOLCHAIN_URL" == *.tar.gz ]]; then
+              wget -O "${TOOLCHAIN_DIR}/toolchain.tar.gz" "$TOOLCHAIN_URL"
+              tar -xzf "${TOOLCHAIN_DIR}/toolchain.tar.gz" -C "${TOOLCHAIN_DIR}" --strip-components=1
+            elif [[ "$TOOLCHAIN_URL" == *.zip ]]; then
+              wget -O "${TOOLCHAIN_DIR}/toolchain.zip" "$TOOLCHAIN_URL"
+              unzip -d "${TOOLCHAIN_DIR}" "${TOOLCHAIN_DIR}/toolchain.zip"
+            else
+              git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" "$TOOLCHAIN_DIR"
+            fi
           fi
+
 
       - name: Set up Cache
         id: cache-out
