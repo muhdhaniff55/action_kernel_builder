@@ -1,4 +1,4 @@
-name: Build Custom Kernel
+name: ChatGPT v3
 on:
   workflow_dispatch:
     inputs:
