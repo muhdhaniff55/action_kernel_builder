@@ -1,4 +1,4 @@
-vaname: ChatGPT v2
+name: ChatGPT v2
 
 on:
   workflow_dispatch:
