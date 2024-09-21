@@ -1,4 +1,4 @@
-name: Aosp Build Kernel
+name: ChatGPT v2
 
 on:
   workflow_dispatch:
@@ -38,31 +38,36 @@ jobs:
         working-directory: ${{ github.workspace }}
 
     steps:
-      - name: Set up environment
+      - name: Set-up environment
         run: |
-          sudo apt-get update && sudo apt-get install -y \
-            build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
-            libssl-dev libfl-dev llvm curl git wget unzip tar jq
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+                                  libssl-dev libfl-dev llvm curl git ftp lftp wget libarchive-tools \
+                                  ccache python2 python2-dev zip unzip tar gzip bzip2 rar unrar cpio jq
 
       - name: Cloning Kernel Source
-        run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} .
+        run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
       - name: Cloning or Extracting Toolchain
         run: |
           TOOLCHAIN_URL=${{ github.event.inputs.TOOLCHAIN_URL }}
-          FILE_NAME=$(basename "$TOOLCHAIN_URL")
           if [[ $TOOLCHAIN_URL == *.tar.gz || $TOOLCHAIN_URL == *.tar.bz2 || $TOOLCHAIN_URL == *.zip ]]; then
-            curl -L "$TOOLCHAIN_URL" -o "$FILE_NAME" && \
-            case "$FILE_NAME" in
-              *.tar.gz) tar -xzf "$FILE_NAME" -C . ;;
-              *.tar.bz2) tar -xjf "$FILE_NAME" -C . ;;
-              *.zip) unzip "$FILE_NAME" -d . ;;
-            esac
+            # Extract the toolchain if it's a tarball or zip
+            FILE_NAME=$(basename "$TOOLCHAIN_URL")
+            curl -L "$TOOLCHAIN_URL" -o "$FILE_NAME"
+            if [[ $FILE_NAME == *.tar.gz ]]; then
+              tar -xzf "$FILE_NAME" -C ${{ github.workspace }}
+            elif [[ $FILE_NAME == *.tar.bz2 ]]; then
+              tar -xjf "$FILE_NAME" -C ${{ github.workspace }}
+            elif [[ $FILE_NAME == *.zip ]]; then
+              unzip "$FILE_NAME" -d ${{ github.workspace }}
+            fi
           else
-            git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" ./toolchain
+            # Clone if it's a git repository
+            git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" ${{ github.workspace }}/toolchain
           fi
 
-      - name: Set up Cache
+      - name: Set-up Cache
         id: cache-out
         uses: actions/cache@v4.0.2
         with:
@@ -71,39 +76,71 @@ jobs:
 
       - name: Start Compilation
         run: |
-          objdir="./out"
-          anykernel="./anykernel"
-          clang_dir="./toolchain"
+          objdir="${{ github.workspace }}/out"
+          anykernel="${{ github.workspace }}/anykernel"
+          clang_dir="${{ github.workspace }}/toolchain"
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
           export PATH="${clang_dir}/bin:$PATH"
 
-          make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
-          make -j$(nproc --all) O=${objdir} ARCH=${arch} CC=clang CROSS_COMPILE=aarch64-linux-gnu- \
-              CROSS_COMPILE_ARM32=arm-linux-gnueabi- AR=llvm-ar LLVM_NM=llvm-nm \
-              OBJCOPY=llvm-objcopy LD=ld.lld NM=llvm-nm LLVM=1 LLVM_IAS=1
+          make_defconfig() {
+            start=$(date +"%s")
+            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+          }
 
-          cd "${objdir}"
-          if [[ -f "arch/arm64/boot/Image" && -f "arch/arm64/boot/dtbo.img" ]]; then
-            git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
-            cp "arch/arm64/boot/Image" "${{ github.workspace }}"
-            cp "arch/arm64/boot/dtbo.img" "${{ github.workspace }}"
-            [[ -d "arch/arm64/boot/dts/vendor/qcom" ]] && cp arch/arm64/boot/dts/vendor/qcom/*.dtb "${{ github.workspace }}"
+          compile() {
+            make -j$(nproc --all) \
+              O=${objdir} \
+              ARCH=${arch} \
+              CC=clang \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+              AR=llvm-ar \
+              LLVM_NM=llvm-nm \
+              OBJCOPY=llvm-objcopy \
+              LD=ld.lld \
+              NM=llvm-nm \
+              LLVM=1 \
+              LLVM_IAS=1
+          }
 
-            mv -f "arch/arm64/boot/Image" "$anykernel/Image"
-            mv -f "arch/arm64/boot/dtbo.img" "$anykernel/dtbo.img"
-            cd "$anykernel"
-            zip -r AnyKernel.zip *
-            mv "AnyKernel.zip" "${{ github.workspace }}/$zip_name"
-          else
-            echo "ERROR: Kernel compilation failed!"
-            exit 1
-          fi
+          completion() {
+            cd "${objdir}"
+            compiled_image="arch/arm64/boot/Image"
+            compiled_dtbo="arch/arm64/boot/dtbo.img"
+            qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
+
+            if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
+              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+              cp "${compiled_image}" "${{ github.workspace }}"
+              cp "${compiled_dtbo}" "${{ github.workspace }}"
+              [[ -d ${qcom_dtb} ]] && cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
+
+              mv -f "${compiled_image}" "$anykernel/Image"
+              mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+              cd "$anykernel"
+              zip -r AnyKernel.zip *
+              mv "AnyKernel.zip" "$zip_name"
+              mv "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
+              rm -rf "$anykernel"
+              end=$(date +"%s")
+              echo -e "BUILD COMPLETED IN $((end - start)) SECONDS"
+            else
+              echo "ERROR: Kernel compilation failed!"
+              exit 1
+            fi
+          }
+
+          make_defconfig
+          compile
+          completion
 
           # Set-up file info
-          echo "ZIP_FILE=${{ github.workspace }}/$zip_name" >> $GITHUB_ENV
-          echo "ZIP_NAME=$(basename "$zip_name" .zip)" >> $GITHUB_ENV
+          zip_file=$(find . -name '${{ github.event.inputs.KERNEL_NAME }}*.zip' -print -quit)
+          echo "ZIP_FILE=$zip_file" >> $GITHUB_ENV
+          echo "ZIP_NAME=$(basename "$zip_file" .zip)" >> $GITHUB_ENV
           echo "RELEASE_DATE=$(date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
           echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
           echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
