@@ -56,21 +56,25 @@ jobs:
       - name: Clone Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
-          FILE_NAME=$(basename "$TOOLCHAIN_URL" | sed 's/ -b .*//') # Get the base name without the branch part
-          BRANCH=$(echo "$TOOLCHAIN_URL" | grep -oP '(?<=-b\s).*') # Extract the branch name
+          # Extract base URL and branch
+          BASE_URL=$(echo "$TOOLCHAIN_URL" | awk '{print $1}') # Get the URL part
+          BRANCH=$(echo "$TOOLCHAIN_URL" | awk '{print $3}') # Get the branch part
 
           if [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.zip ]]; then
             wget "$TOOLCHAIN_URL"
-            if [[ "$FILE_NAME" == *.tar.gz ]]; then
+            # Handle archive extraction (tar or zip)
+            if [[ "$TOOLCHAIN_URL" == *.tar.gz ]]; then
+              FILE_NAME=$(basename "$TOOLCHAIN_URL")
               tar -xzf "$FILE_NAME" -C ${{ github.workspace }}
-            elif [[ "$FILE_NAME" == *.zip ]]; then
+              mv "${{ github.workspace }}/$(basename "$FILE_NAME" .tar.gz)" "${{ github.workspace }}/toolchain"
+            elif [[ "$TOOLCHAIN_URL" == *.zip ]]; then
+              FILE_NAME=$(basename "$TOOLCHAIN_URL")
               unzip "$FILE_NAME" -d ${{ github.workspace }}
+              mv "${{ github.workspace }}/$(basename "$FILE_NAME" .zip)" "${{ github.workspace }}/toolchain"
             fi
-            mv "${{ github.workspace }}/$(basename "$FILE_NAME" .tar.gz)" "${{ github.workspace }}/toolchain" || \
-            mv "${{ github.workspace }}/$(basename "$FILE_NAME" .zip)" "${{ github.workspace }}/toolchain"
             rm "$FILE_NAME"
           else
-            git clone --single-branch --depth=1 --no-tags "$FILE_NAME" -b "$BRANCH" "${{ github.workspace }}/toolchain"
+            git clone --single-branch --depth=1 --no-tags "$BASE_URL" -b "$BRANCH" "${{ github.workspace }}/toolchain"
           fi
 
       - name: Set up Cache
