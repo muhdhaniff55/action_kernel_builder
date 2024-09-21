@@ -1,4 +1,5 @@
 name: ChatGPT v2
+
 on:
   workflow_dispatch:
     inputs:
@@ -35,17 +36,18 @@ jobs:
     steps:
       - name: Set up environment
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm clang \
+          sudo apt-get update && sudo apt-get install -y \
+            build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm clang \
             curl git zip unzip tar gzip bzip2
 
       - name: Clone Kernel Source
-        run: git clone --single-branch --depth=1 ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
+        run: |
+          git clone --single-branch --depth=1 ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
       - name: Download Toolchain
         run: |
           if [[ ${{ github.event.inputs.TOOLCHAIN_URL }} == *".tar"* ]]; then
-            curl -L -o toolchain.tar.gz ${{ github.event.inputs.TOOLCHAIN_URL }}
+            curl -L -o toolchain.tar.gz ${{ github.event.inputs.TOOLCHAIN_URL }} &&
             tar -xzf toolchain.tar.gz -C ${{ github.workspace }}
           else
             git clone --single-branch --depth=1 ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
@@ -59,14 +61,11 @@ jobs:
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
-          
+
           export PATH="${clang_dir}/bin:$PATH"
 
-          make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc)
-
-          make -j$(nproc) O=${objdir} ARCH=${arch} CC=clang \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            AR=llvm-ar LD=ld.lld
+          make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc) || { echo "ERROR: Configuration failed!"; exit 1; }
+          make -j$(nproc) O=${objdir} ARCH=${arch} CC=clang CROSS_COMPILE=aarch64-linux-gnu- AR=llvm-ar LD=ld.lld || { echo "ERROR: Compilation failed!"; exit 1; }
 
           if [[ -f ${objdir}/arch/arm64/boot/Image && -f ${objdir}/arch/arm64/boot/dtbo.img ]]; then
             git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
