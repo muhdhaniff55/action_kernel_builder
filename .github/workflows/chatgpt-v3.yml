@@ -1,4 +1,4 @@
-name: ChatGPT v3
+name: Aosp Build Kernel
 
 on:
   workflow_dispatch:
@@ -56,7 +56,9 @@ jobs:
       - name: Clone Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
-          FILE_NAME=$(basename "$TOOLCHAIN_URL")
+          FILE_NAME=$(basename "$TOOLCHAIN_URL" | sed 's/ -b .*//') # Get the base name without the branch part
+          BRANCH=$(echo "$TOOLCHAIN_URL" | grep -oP '(?<=-b\s).*') # Extract the branch name
+
           if [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.zip ]]; then
             wget "$TOOLCHAIN_URL"
             if [[ "$FILE_NAME" == *.tar.gz ]]; then
@@ -68,7 +70,7 @@ jobs:
             mv "${{ github.workspace }}/$(basename "$FILE_NAME" .zip)" "${{ github.workspace }}/toolchain"
             rm "$FILE_NAME"
           else
-            git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" "${{ github.workspace }}/toolchain"
+            git clone --single-branch --depth=1 --no-tags "$FILE_NAME" -b "$BRANCH" "${{ github.workspace }}/toolchain"
           fi
 
       - name: Set up Cache
