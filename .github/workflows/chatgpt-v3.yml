@@ -37,49 +37,43 @@ jobs:
         working-directory: ${{ github.workspace }}
 
     steps:
-      - name: Set up environment
+      - name: Set-up environment
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
-                                  libssl-dev libfl-dev llvm curl git ftp lftp wget libarchive-tools \
-                                  ccache python2 python2-dev zip unzip tar gzip bzip2 rar unrar cpio jq
+          rm -rf ${{ github.workspace }}/*
+          sudo apt-get update && sudo apt-get install -y \
+          build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+          libssl-dev libfl-dev llvm curl git ftp lftp wget libarchive-tools \
+          ccache python2 python2-dev zip unzip tar gzip bzip2 rar unrar cpio jq
+          
+      - name: Cloning Kernel Source
+        run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
-      - name: Clone Kernel Source
+      - name: Downloading and Setting Up Toolchain
         run: |
-          git clone --single-branch --depth=1 --no-tags "${{ github.event.inputs.KERNEL_SOURCE }}" -b "${{ github.event.inputs.KERNEL_BRANCH }}" "${{ github.workspace }}"
+          TOOLCHAIN_URL=${{ github.event.inputs.TOOLCHAIN_URL }}
+          TOOLCHAIN_DIR="${{ github.workspace }}/toolchain"
+          
+          # Create toolchain directory
+          mkdir -p "${TOOLCHAIN_DIR}"
 
-      - name: Clone or Extract Toolchain
-        run: |
-          TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
-          FILE_NAME=$(basename "$TOOLCHAIN_URL")
-
-          # Check for archive types or perform a clone
-          if [[ $TOOLCHAIN_URL == *.tar.gz ]]; then
-            curl -L "$TOOLCHAIN_URL" -o "$FILE_NAME"
-            tar -xzf "$FILE_NAME" -C "${{ github.workspace }}"
-          elif [[ $TOOLCHAIN_URL == *.tar.bz2 ]]; then
-            curl -L "$TOOLCHAIN_URL" -o "$FILE_NAME"
-            tar -xjf "$FILE_NAME" -C "${{ github.workspace }}"
-          elif [[ $TOOLCHAIN_URL == *.zip ]]; then
-            curl -L "$TOOLCHAIN_URL" -o "$FILE_NAME"
-            unzip "$FILE_NAME" -d "${{ github.workspace }}"
+          # Download toolchain
+          if [[ "${TOOLCHAIN_URL}" == *.tar.gz ]]; then
+              wget -O "${TOOLCHAIN_DIR}/toolchain.tar.gz" "${TOOLCHAIN_URL}"
+              tar -xzf "${TOOLCHAIN_DIR}/toolchain.tar.gz" -C "${TOOLCHAIN_DIR}" --strip-components=1
+          elif [[ "${TOOLCHAIN_URL}" == *.zip ]]; then
+              wget -O "${TOOLCHAIN_DIR}/toolchain.zip" "${TOOLCHAIN_URL}"
+              unzip -d "${TOOLCHAIN_DIR}" "${TOOLCHAIN_DIR}/toolchain.zip"
           else
-            git clone --single-branch --depth=1 --no-tags "${TOOLCHAIN_URL}" "${{ github.workspace }}/toolchain"
+              # Fallback to git clone if it's not a zip or tar.gz
+              git clone --single-branch --depth=1 --no-tags "${TOOLCHAIN_URL}" "${TOOLCHAIN_DIR}"
           fi
 
-      - name: Set up ccache
-        run: |
-          sudo apt-get install -y ccache
-          echo "export CC='ccache clang'" >> $GITHUB_ENV
-          echo "export CXX='ccache clang++'" >> $GITHUB_ENV
-
-      - name: Set up Cache for Build Artifacts
+      - name: Set-up Cache
+        id: cache-out
         uses: actions/cache@v4
         with:
-          path: |
-            out
-            toolchain
-          key: ${{ runner.os }}-build-${{ github.event.inputs.KERNEL_NAME }}-${{ hashFiles('**/*.c', '**/*.h') }}
+         path: ${{ github.workspace }}/out
+         key: ${{ github.event.inputs.KERNEL_SOURCE }}-out-
 
       - name: Start Compilation
         run: |
