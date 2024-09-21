@@ -53,10 +53,9 @@ jobs:
 
       - name: Start Compilation
         run: |
-          set -e
           objdir="${{ github.workspace }}/out"
           anykernel="${{ github.workspace }}/anykernel"
-          clang_dir="${{ github.workspace }}/toolchain" # Adjust this based on how you extracted the tar if necessary
+          clang_dir="${{ github.workspace }}/toolchain"
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
