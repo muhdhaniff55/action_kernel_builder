@@ -1,4 +1,4 @@
-name: ChatGPT
+name: ChatGPT v2
 on:
   workflow_dispatch:
     inputs:
