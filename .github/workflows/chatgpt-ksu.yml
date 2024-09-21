@@ -1,0 +1,407 @@
+name: ChatGPT KSU
+
+on:
+  workflow_dispatch:
+    inputs:
+      KERNEL_SOURCE:
+        description: 'Kernel source URL'
+        required: true
+        default: 'https://github.com/muhdhaniff55/kernel_xiaomi_vayu_upstream.git'
+      KERNEL_BRANCH:
+        description: 'Kernel branch'
+        required: true
+        default: 'ksu'
+      KERNEL_NAME:
+        description: 'Kernel/zip name'
+        required: true
+        default: 'AnymoreKSU'
+      CONFIG_FILE:
+        description: 'Config file (You can put multiple configs separated by space)'
+        required: true
+        default: 'vayu_defconfig'
+      TOOLCHAIN_URL:
+        description: "Clone URL of your toolchain including branch"
+        required: true
+        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225.git -b 15.0'
+      ANYKERNEL:
+        description: "Clone URL of your AnyKernel including branch"
+        required: true
+        default: 'https://github.com/AnymoreProject/AnyKernel3.git -b main'
+
+jobs:
+  Kernel:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+            libssl-dev libfl-dev llvm curl git ftp lftp wget \
+            libarchive-tools ccache python2 python2-dev zip unzip tar \
+            gzip bzip2 rar unrar cpio jq
+          rm -rf ${{ github.workspace }}/*
+
+      - name: Clone Kernel Source
+        run: |
+          git clone --single-branch --depth=1 --no-tags \
+            ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
+
+      - name: Check Kernel Type
+        id: check_kernel
+        run: |
+          if grep -q "CONFIG_GKI=y" "${{ github.workspace }}/.config"; then
+            echo "Kernel Type: GKI"
+            echo "is_gki=true" >> $GITHUB_ENV
+          else
+            echo "Kernel Type: Non-GKI"
+            echo "is_gki=false" >> $GITHUB_ENV
+          fi
+
+      - name: Clone KernelSU
+        run: |
+          if [ "${{ env.is_gki }}" == "true" ]; then
+            echo "Cloning KernelSU for GKI kernel..."
+            git clone --single-branch --depth=1 --no-tags \
+              'https://github.com/KernelSU/KernelSU.git' -b master ${{ github.workspace }}/kernelsu
+          else
+            echo "Cloning KernelSU for Non-GKI kernel (version 0.9.5)..."
+            git clone --single-branch --depth=1 --no-tags \
+              'https://github.com/KernelSU/KernelSU.git' -b v0.9.5 ${{ github.workspace }}/kernelsu
+          fi
+
+      - name: Apply KernelSU Kconfig Patch
+        run: |
+          git apply ${{ github.workspace }}/kconfig_kernelsu.patch
+
+      - name: Clone Toolchain
+        run: |
+          TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
+          BASE_URL=$(echo "$TOOLCHAIN_URL" | awk '{print $1}') # Get the URL part
+          BRANCH=$(echo "$TOOLCHAIN_URL" | awk '{print $3}') # Get the branch part
+
+          if [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.zip ]]; then
+            wget "$TOOLCHAIN_URL"
+            if [[ "$TOOLCHAIN_URL" == *.tar.gz ]]; then
+              FILE_NAME=$(basename "$TOOLCHAIN_URL")
+              tar -xzf "$FILE_NAME" -C ${{ github.workspace }}
+              mv "${{ github.workspace }}/$(basename "$FILE_NAME" .tar.gz)" "${{ github.workspace }}/toolchain"
+            elif [[ "$TOOLCHAIN_URL" == *.zip ]]; then
+              FILE_NAME=$(basename "$TOOLCHAIN_URL")
+              unzip "$FILE_NAME" -d ${{ github.workspace }}
+              mv "${{ github.workspace }}/$(basename "$FILE_NAME" .zip)" "${{ github.workspace }}/toolchain"
+            fi
+            rm "$FILE_NAME"
+          else
+            git clone --single-branch --depth=1 --no-tags "$BASE_URL" -b "$BRANCH" "${{ github.workspace }}/toolchain"
+          fi
+
+      - name: Set up Cache
+        id: cache-out
+        uses: actions/cache@v4.0.2
+        with:
+          path: ${{ github.workspace }}/out
+          key: ${{ github.event.inputs.KERNEL_SOURCE }}-out-
+
+      - name: Start Compilation
+        run: |
+          objdir="${{ github.workspace }}/out"
+          anykernel="${{ github.workspace }}/anykernel"
+          clang_dir="${{ github.workspace }}/toolchain"
+          kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
+          zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
+          arch="arm64"
+          
+          export PATH="${clang_dir}/bin:$PATH"
+
+          make_defconfig() {
+            start=$(date +"%s")
+            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+            echo "CONFIG_KRNL_SU=y" >> "${objdir}/.config"
+          }
+
+          compile() {
+            cd "${{ github.workspace }}"
+            make -j$(nproc --all) \
+              O=out \
+              ARCH=${arch} \
+              CC=clang \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+              AR=llvm-ar \
+              LLVM_NM=llvm-nm \
+              OBJCOPY=llvm-objcopy \
+              LD=ld.lld \
+              NM=llvm-nm \
+              LLVM=1 \
+              LLVM_IAS=1
+          }
+
+          completion() {
+            cd "${objdir}"
+            compiled_image="arch/arm64/boot/Image"
+            compiled_dtbo="arch/arm64/boot/dtbo.img"
+            qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
+
+            if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
+              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+              cp "${compiled_image}" "${{ github.workspace }}"
+              cp "${compiled_dtbo}" "${{ github.workspace }}"
+              if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
+                cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
+              fi
+              mv -f "${compiled_image}" "$anykernel/Image"
+              mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+              cd "$anykernel"
+              zip -r AnyKernel.zip *
+              mv "AnyKernel.zip" "${{ github.workspace }}/$zip_name"
+              rm -rf "$anykernel"
+              end=$(date +"%s")
+              diff=$((end - start))
+              echo "BUILD COMPLETED IN ${diff} SECONDS"
+            else
+              echo "ERROR: Kernel compilation failed!"
+              exit 1
+            fi
+          }
+
+          make_defconfig
+          compile
+          completion
+
+          cd "${{ github.workspace }}"
+
+          # Set up file info
+          zip_file=$(find . -name '${{ github.event.inputs.KERNEL_NAME }}*.zip' -print -quit)
+          echo "ZIP_FILE=$zip_file" >> $GITHUB_ENV
+          echo "ZIP_NAME=$(basename "$zip_file" .zip)" >> $GITHUB_ENV
+          echo "RELEASE_DATE=$(date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
+          echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
+          echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
+
+      - name: Upload files to repository releases page
+        uses: softprops/action-gh-release@v2.0.8
+        with:
+          files: |
+            ${{ github.workspace }}/*.dtb
+            ${{ env.ZIP_FILE }}
+            ${{ env.DTBO }}
+            ${{ env.IMAGE }}
+          name: ${{ env.ZIP_NAME }}
+          tag_name: ${{ github.run_id }}
+          body: |
+            Released on ${{ env.RELEASE_DATE }}
+name: ChatGPT v3
+
+on:
+  workflow_dispatch:
+    inputs:
+      KERNEL_SOURCE:
+        description: 'Kernel source URL'
+        required: true
+        default: 'https://github.com/muhdhaniff55/kernel_xiaomi_vayu_upstream.git'
+      KERNEL_BRANCH:
+        description: 'Kernel branch'
+        required: true
+        default: 'ksu'
+      KERNEL_NAME:
+        description: 'Kernel/zip name'
+        required: true
+        default: 'AnymoreKSU'
+      CONFIG_FILE:
+        description: 'Config file (You can put multiple configs separated by space)'
+        required: true
+        default: 'vayu_defconfig'
+      TOOLCHAIN_URL:
+        description: "Clone URL of your toolchain including branch"
+        required: true
+        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225.git -b 15.0'
+      ANYKERNEL:
+        description: "Clone URL of your AnyKernel including branch"
+        required: true
+        default: 'https://github.com/AnymoreProject/AnyKernel3.git -b master'
+      KERNELSU_VERSION:
+        description: 'KernelSU version (e.g., master, v0.9.5)'
+        required: true
+        default: 'master'
+      KERNELSU_ENABLED:
+        description: 'Enable KernelSU (true or false)'
+        required: true
+        default: 'true'
+
+jobs:
+  Kernel:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+            libssl-dev libfl-dev llvm curl git ftp lftp wget \
+            libarchive-tools ccache python2 python2-dev zip unzip tar \
+            gzip bzip2 rar unrar cpio jq
+          rm -rf ${{ github.workspace }}/*
+
+      - name: Clone Kernel Source
+        run: |
+          git clone --single-branch --depth=1 --no-tags \
+            ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
+
+      - name: Check Kernel Type
+        id: check_kernel
+        run: |
+          if grep -q "CONFIG_GKI=y" "${{ github.workspace }}/.config"; then
+            echo "Kernel Type: GKI"
+            echo "is_gki=true" >> $GITHUB_ENV
+          else
+            echo "Kernel Type: Non-GKI"
+            echo "is_gki=false" >> $GITHUB_ENV
+          fi
+
+      - name: Clone KernelSU
+        if: ${{ github.event.inputs.KERNELSU_ENABLED == 'true' }}
+        run: |
+          KERNELSU_VERSION="${{ github.event.inputs.KERNELSU_VERSION }}"
+          echo "Cloning KernelSU version $KERNELSU_VERSION..."
+          git clone --single-branch --depth=1 --no-tags \
+            "https://github.com/KernelSU/KernelSU.git" -b "$KERNELSU_VERSION" ${{ github.workspace }}/kernelsu
+
+      - name: Apply KernelSU Kconfig Patch
+        if: ${{ github.event.inputs.KERNELSU_ENABLED == 'true' }}
+        run: |
+          git apply ${{ github.workspace }}/kconfig_kernelsu.patch
+
+      - name: Clone Toolchain
+        run: |
+          TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
+          BASE_URL=$(echo "$TOOLCHAIN_URL" | awk '{print $1}') # Get the URL part
+          BRANCH=$(echo "$TOOLCHAIN_URL" | awk '{print $3}') # Get the branch part
+
+          if [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.zip ]]; then
+            wget "$TOOLCHAIN_URL"
+            if [[ "$TOOLCHAIN_URL" == *.tar.gz ]]; then
+              FILE_NAME=$(basename "$TOOLCHAIN_URL")
+              tar -xzf "$FILE_NAME" -C ${{ github.workspace }}
+              mv "${{ github.workspace }}/$(basename "$FILE_NAME" .tar.gz)" "${{ github.workspace }}/toolchain"
+            elif [[ "$TOOLCHAIN_URL" == *.zip ]]; then
+              FILE_NAME=$(basename "$TOOLCHAIN_URL")
+              unzip "$FILE_NAME" -d ${{ github.workspace }}
+              mv "${{ github.workspace }}/$(basename "$FILE_NAME" .zip)" "${{ github.workspace }}/toolchain"
+            fi
+            rm "$FILE_NAME"
+          else
+            git clone --single-branch --depth=1 --no-tags "$BASE_URL" -b "$BRANCH" "${{ github.workspace }}/toolchain"
+          fi
+
+      - name: Set up Cache
+        id: cache-out
+        uses: actions/cache@v4.0.2
+        with:
+          path: ${{ github.workspace }}/out
+          key: ${{ github.event.inputs.KERNEL_SOURCE }}-out-
+
+      - name: Start Compilation
+        run: |
+          objdir="${{ github.workspace }}/out"
+          anykernel="${{ github.workspace }}/anykernel"
+          clang_dir="${{ github.workspace }}/toolchain"
+          kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
+          zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
+          arch="arm64"
+          
+          export PATH="${clang_dir}/bin:$PATH"
+
+          make_defconfig() {
+            start=$(date +"%s")
+            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+            if [ "${{ github.event.inputs.KERNELSU_ENABLED }}" == "true" ]; then
+              echo "CONFIG_KRNL_SU=y" >> "${objdir}/.config"
+            fi
+          }
+
+          compile() {
+            cd "${{ github.workspace }}"
+            make -j$(nproc --all) \
+              O=out \
+              ARCH=${arch} \
+              CC=clang \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+              AR=llvm-ar \
+              LLVM_NM=llvm-nm \
+              OBJCOPY=llvm-objcopy \
+              LD=ld.lld \
+              NM=llvm-nm \
+              LLVM=1 \
+              LLVM_IAS=1
+          }
+
+          completion() {
+            cd "${objdir}"
+            compiled_image="arch/arm64/boot/Image"
+            compiled_dtbo="arch/arm64/boot/dtbo.img"
+            qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
+
+            if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
+              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+              cp "${compiled_image}" "${{ github.workspace }}"
+              cp "${compiled_dtbo}" "${{ github.workspace }}"
+              if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
+                cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
+              fi
+              mv -f "${compiled_image}" "$anykernel/Image"
+              mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+              cd "$anykernel"
+              zip -r AnyKernel.zip *
+              mv "AnyKernel.zip" "${{ github.workspace }}/$zip_name"
+              rm -rf "$anykernel"
+              end=$(date +"%s")
+              diff=$((end - start))
+              echo "BUILD COMPLETED IN ${diff} SECONDS"
+            else
+              echo "ERROR: Kernel compilation failed!"
+              exit 1
+            fi
+          }
+
+          make_defconfig
+          compile
+          completion
+
+          cd "${{ github.workspace }}"
+
+          # Set up file info
+          zip_file=$(find . -name '${{ github.event.inputs.KERNEL_NAME }}*.zip' -print -quit)
+          echo "ZIP_FILE=$zip_file" >> $GITHUB_ENV
+          echo "ZIP_NAME=$(basename "$zip_file" .zip)" >> $GITHUB_ENV
+          echo "RELEASE_DATE=$(date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
+          echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
+          echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
+
+      - name: Upload files to repository releases page
+        uses: softprops/action-gh-release@v2.0.8
+        with:
+          files: |
+            ${{ github.workspace }}/*.dtb
+            ${{ env.ZIP_FILE }}
+            ${{ env.DTBO }}
+            ${{ env.IMAGE }}
+          name: ${{ env.ZIP_NAME }}
+          tag_name: ${{ github.run_id }}
+          body: |
+            Released on ${{ env.RELEASE_DATE }}
