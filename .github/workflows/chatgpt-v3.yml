@@ -39,7 +39,6 @@ jobs:
     steps:
       - name: Set up environment
         run: |
-          rm -rf ${{ github.workspace }}/*
           sudo apt-get update
           sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
                                   libssl-dev libfl-dev llvm curl git ftp lftp wget libarchive-tools \
@@ -47,31 +46,32 @@ jobs:
 
       - name: Clone Kernel Source
         run: |
-          git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
+          git clone --single-branch --depth=1 --no-tags "${{ github.event.inputs.KERNEL_SOURCE }}" -b "${{ github.event.inputs.KERNEL_BRANCH }}" "${{ github.workspace }}"
 
       - name: Clone or Extract Toolchain
         run: |
-          TOOLCHAIN_URL=${{ github.event.inputs.TOOLCHAIN_URL }}
+          TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
           FILE_NAME=$(basename "$TOOLCHAIN_URL")
 
+          # Check for archive types or perform a clone
           if [[ $TOOLCHAIN_URL == *.tar.gz ]]; then
             curl -L "$TOOLCHAIN_URL" -o "$FILE_NAME"
-            tar -xzf "$FILE_NAME" -C ${{ github.workspace }}
+            tar -xzf "$FILE_NAME" -C "${{ github.workspace }}"
           elif [[ $TOOLCHAIN_URL == *.tar.bz2 ]]; then
             curl -L "$TOOLCHAIN_URL" -o "$FILE_NAME"
-            tar -xjf "$FILE_NAME" -C ${{ github.workspace }}
+            tar -xjf "$FILE_NAME" -C "${{ github.workspace }}"
           elif [[ $TOOLCHAIN_URL == *.zip ]]; then
             curl -L "$TOOLCHAIN_URL" -o "$FILE_NAME"
-            unzip "$FILE_NAME" -d ${{ github.workspace }}
+            unzip "$FILE_NAME" -d "${{ github.workspace }}"
           else
-            git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" ${{ github.workspace }}/toolchain
+            git clone --single-branch --depth=1 --no-tags "${TOOLCHAIN_URL}" "${{ github.workspace }}/toolchain"
           fi
 
       - name: Set up ccache
         run: |
           sudo apt-get install -y ccache
-          export CC="ccache clang"
-          export CXX="ccache clang++"
+          echo "export CC='ccache clang'" >> $GITHUB_ENV
+          echo "export CXX='ccache clang++'" >> $GITHUB_ENV
 
       - name: Set up Cache for Build Artifacts
         uses: actions/cache@v4
@@ -92,7 +92,7 @@ jobs:
           export PATH="${clang_dir}/bin:$PATH"
 
           make_defconfig() {
-            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+            make -s ARCH=${arch} O=${objdir} "${{ github.event.inputs.CONFIG_FILE }}" -j$(nproc --all)
           }
 
           compile() {
@@ -118,7 +118,7 @@ jobs:
             qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
 
             if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
-              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+              git clone -q "${{ github.event.inputs.ANYKERNEL }}" "$anykernel"
               cp "${compiled_image}" "${{ github.workspace }}"
               cp "${compiled_dtbo}" "${{ github.workspace }}"
 
