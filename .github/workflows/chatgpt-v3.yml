@@ -1,31 +1,31 @@
-name: ChatGPT V3
+name: Build Custom Kernel
 on:
   workflow_dispatch:
     inputs:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/AnymoreProject/kernel_xiaomi_vayu_upstream.git'
+        default: 'https://github.com/muhdhaniff55/platform_kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'ksu'
+        default: 'KernelSU'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'AnymoreKSU'
+        default: 'SkylineKernel_vayu_'
       CONFIG_FILE:
-        description: 'Config file (multiple configs can be separated by space)'
+        description: 'Config file (multiple configs separated by space)'
         required: true
-        default: 'vayu_defconfig'
+        default: 'vayu_user_defconfig'
       TOOLCHAIN_URL:
-        description: 'Toolchain URL including branch'
+        description: "Toolchain URL including branch"
         required: true
         default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225.git -b 15.0'
       ANYKERNEL:
-        description: 'AnyKernel URL including branch'
+        description: "AnyKernel URL including branch"
         required: true
-        default: 'https://github.com/AnymoreProject/AnyKernel3.git -b master'
+        default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
 
 jobs:
   Kernel:
@@ -33,15 +33,18 @@ jobs:
     steps:
       - name: Set up environment
         run: |
+          rm -rf ${{ github.workspace }}/*
           sudo apt-get update && sudo apt-get install -y \
-          build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
-          libssl-dev libfl-dev llvm curl git wget ccache python2 zip unzip
+            build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+            libssl-dev libfl-dev llvm curl git ftp lftp wget \
+            libarchive-tools ccache python2 python2-dev \
+            zip unzip tar gzip bzip2 rar unrar cpio jq
 
       - name: Clone Kernel Source
         run: |
           git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
-      - name: Set Up Toolchain
+      - name: Clone Toolchain
         run: |
           TOOLCHAIN_DIR="${{ github.workspace }}/toolchain"
           mkdir -p "${TOOLCHAIN_DIR}"
@@ -55,30 +58,59 @@ jobs:
             git clone --single-branch --depth=1 --no-tags "${{ github.event.inputs.TOOLCHAIN_URL }}" "${TOOLCHAIN_DIR}"
           fi
 
-      - name: Compile Kernel
+      - name: Set up Cache
+        id: cache-out
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/out
+          key: ${{ github.event.inputs.KERNEL_SOURCE }}-out
+
+      - name: Start Compilation
         run: |
           objdir="${{ github.workspace }}/out"
-          clang_dir="${{ github.workspace }}/toolchain"
-          export PATH="${clang_dir}/bin:$PATH"
-          make -s ARCH=arm64 O=${objdir} "${{ github.event.inputs.CONFIG_FILE }}" -j$(nproc --all)
-          make -j$(nproc --all) O=${objdir} ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- || exit 1
-
-          # Handle AnyKernel
           anykernel="${{ github.workspace }}/anykernel"
-          git clone -q "${{ github.event.inputs.ANYKERNEL }}" "$anykernel"
+          clang_dir="${{ github.workspace }}/toolchain"
+          kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
+          zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
+          arch="arm64"
+
+          export PATH="${clang_dir}/bin:$PATH"
+
+          echo "Configuring kernel..."
+          make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+
+          echo "Compiling kernel..."
+          make -j$(nproc --all) \
+            O=${objdir} \
+            ARCH=${arch} \
+            CC=clang \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            AR=llvm-ar \
+            LD=ld.lld
+
+          echo "Preparing AnyKernel package..."
+          git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
           cp "${objdir}/arch/arm64/boot/Image" "${{ github.workspace }}"
           cp "${objdir}/arch/arm64/boot/dtbo.img" "${{ github.workspace }}"
-          mv "${objdir}/arch/arm64/boot/Image" "$anykernel/Image"
-          mv "${objdir}/arch/arm64/boot/dtbo.img" "$anykernel/dtbo.img"
-          cd "$anykernel" && zip -r AnyKernel.zip * && mv AnyKernel.zip "${{ github.workspace }}/${{ github.event.inputs.KERNEL_NAME }}-$(date +"%d-%m-%Y").zip"
+
+          qcom_dtb="${objdir}/arch/arm64/boot/dts/vendor/qcom"
+          if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
+            cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
+          fi
+
+          mv "${{ github.workspace }}/Image" "$anykernel/Image"
+          mv "${{ github.workspace }}/dtbo.img" "$anykernel/dtbo.img"
+          cd "$anykernel" && zip -r AnyKernel.zip * && mv AnyKernel.zip "${{ github.workspace }}/$zip_name"
 
       - name: Upload Release
-        uses: softprops/action-gh-release@v2.0.8
+        uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ github.workspace }}/*.zip
             ${{ github.workspace }}/*.dtb
-          name: ${{ github.event.inputs.KERNEL_NAME }}
+            ${{ github.workspace }}/${{ github.event.inputs.KERNEL_NAME }}*.zip
+            ${{ github.workspace }}/dtbo.img
+            ${{ github.workspace }}/Image
+          name: ${{ github.event.inputs.KERNEL_NAME }} Release
           tag_name: ${{ github.run_id }}
           body: |
-            Released on $(TZ='Asia/Kuala_Lumpur' date +'%B %-d, %Y %H:%M')
+            Released on $(TZ='Asia/Kuala_Lumpur' date +"%B %-d, %Y %H:%M")
