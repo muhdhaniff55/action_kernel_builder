@@ -33,6 +33,7 @@ jobs:
     steps:
       - name: Set up environment
         run: |
+          # Clear workspace and install dependencies
           rm -rf ${{ github.workspace }}/*
           sudo apt-get update && sudo apt-get install -y \
             build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
@@ -42,10 +43,12 @@ jobs:
 
       - name: Clone Kernel Source
         run: |
+          # Clone the specified kernel source repository
           git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
       - name: Clone Toolchain
         run: |
+          # Clone or download the toolchain based on the URL provided
           TOOLCHAIN_DIR="${{ github.workspace }}/toolchain"
           mkdir -p "${TOOLCHAIN_DIR}"
           if [[ "${{ github.event.inputs.TOOLCHAIN_URL }}" == *.tar.gz ]]; then
@@ -63,44 +66,88 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/out
-          key: ${{ github.event.inputs.KERNEL_SOURCE }}-out
+          key: ${{ github.event.inputs.KERNEL_SOURCE }}-${{ github.event.inputs.KERNEL_BRANCH }}-out
 
       - name: Start Compilation
         run: |
+          # Set up environment variables
           objdir="${{ github.workspace }}/out"
           anykernel="${{ github.workspace }}/anykernel"
           clang_dir="${{ github.workspace }}/toolchain"
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
-
           export PATH="${clang_dir}/bin:$PATH"
 
-          echo "Configuring kernel..."
-          make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+          # Function to configure the kernel
+          make_defconfig() {
+            echo "Configuring kernel with ${CONFIG_FILE}..."
+            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+          }
 
-          echo "Compiling kernel..."
-          make -j$(nproc --all) \
-            O=${objdir} \
-            ARCH=${arch} \
-            CC=clang \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            AR=llvm-ar \
-            LD=ld.lld
+          # Function to compile the kernel
+          compile() {
+            echo "Compiling kernel..."
+            cd "${{ github.workspace }}"
+            make -j$(nproc --all) \
+              O=${objdir} \
+              ARCH=${arch} \
+              CC=clang \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+              AR=llvm-ar \
+              LLVM_NM=llvm-nm \
+              OBJCOPY=llvm-objcopy \
+              LD=ld.lld \
+              NM=llvm-nm \
+              LLVM=1 \
+              LLVM_IAS=1
+          }
 
-          echo "Preparing AnyKernel package..."
-          git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
-          cp "${objdir}/arch/arm64/boot/Image" "${{ github.workspace }}"
-          cp "${objdir}/arch/arm64/boot/dtbo.img" "${{ github.workspace }}"
+          # Function to prepare the AnyKernel package
+          completion() {
+            cd "${objdir}"
+            compiled_image="arch/arm64/boot/Image"
+            compiled_dtbo="arch/arm64/boot/dtbo.img"
+            qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
 
-          qcom_dtb="${objdir}/arch/arm64/boot/dts/vendor/qcom"
-          if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
-            cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
-          fi
+            if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
+              echo "Preparing AnyKernel package..."
+              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+              cp "${compiled_image}" "${{ github.workspace }}"
+              cp "${compiled_dtbo}" "${{ github.workspace }}"
 
-          mv "${{ github.workspace }}/Image" "$anykernel/Image"
-          mv "${{ github.workspace }}/dtbo.img" "$anykernel/dtbo.img"
-          cd "$anykernel" && zip -r AnyKernel.zip * && mv AnyKernel.zip "${{ github.workspace }}/$zip_name"
+              if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
+                cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
+              fi
+
+              mv -f "${compiled_image}" "$anykernel/Image"
+              mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+              cd "$anykernel"
+              zip -r AnyKernel.zip *
+              mv -- "AnyKernel.zip" "${{ github.workspace }}/$zip_name"
+              rm -rf "$anykernel"
+              echo "Build completed successfully."
+            else
+              echo "ERROR: Kernel compilation failed!"
+              exit 1
+            fi
+          }
+
+          # Execute the functions
+          make_defconfig
+          compile
+          completion
+
+          # Set up file info for release
+          cd "${{ github.workspace }}"
+          zip_file=$(find . -name '${{ github.event.inputs.KERNEL_NAME }}*.zip' -print -quit)
+          echo "ZIP_FILE=$zip_file" >> $GITHUB_ENV
+          echo "ZIP_NAME=$(basename "$zip_file" .zip)" >> $GITHUB_ENV
+          echo "RELEASE_DATE=$(date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
+          echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
+          echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
 
       - name: Upload Release
         uses: softprops/action-gh-release@v1
