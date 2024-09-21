@@ -52,7 +52,6 @@ jobs:
         run: |
           TOOLCHAIN_URL=${{ github.event.inputs.TOOLCHAIN_URL }}
           if [[ $TOOLCHAIN_URL == *.tar.gz || $TOOLCHAIN_URL == *.tar.bz2 || $TOOLCHAIN_URL == *.zip ]]; then
-            # Extract the toolchain if it's a tarball or zip
             FILE_NAME=$(basename "$TOOLCHAIN_URL")
             curl -L "$TOOLCHAIN_URL" -o "$FILE_NAME"
             if [[ $FILE_NAME == *.tar.gz ]]; then
@@ -63,16 +62,22 @@ jobs:
               unzip "$FILE_NAME" -d ${{ github.workspace }}
             fi
           else
-            # Clone if it's a git repository
             git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" ${{ github.workspace }}/toolchain
           fi
 
-      - name: Set-up Cache
-        id: cache-out
-        uses: actions/cache@v4.0.2
+      - name: Set up ccache
+        run: |
+          sudo apt-get install -y ccache
+          export CC="ccache clang"
+          export CXX="ccache clang++"
+
+      - name: Set up Cache for build artifacts
+        uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/out
-          key: ${{ github.event.inputs.KERNEL_SOURCE }}-out-
+          path: |
+            out
+            toolchain
+          key: ${{ runner.os }}-build-${{ github.event.inputs.KERNEL_NAME }}-${{ hashFiles('**/*.c', '**/*.h') }}
 
       - name: Start Compilation
         run: |
