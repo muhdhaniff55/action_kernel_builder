@@ -1,4 +1,4 @@
-name: Aosp Build Kernel
+name: ChatGPT v3
 
 on:
   workflow_dispatch:
@@ -38,37 +38,40 @@ jobs:
         working-directory: ${{ github.workspace }}
 
     steps:
-      - name: Set-up environment
+      - name: Set up environment
         run: |
-          rm -rf ${{ github.workspace }}/*
           sudo apt-get update
-          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
-          sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
-          sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
+          sudo apt-get install -y \
+            build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+            libssl-dev libfl-dev llvm curl git ftp lftp wget \
+            libarchive-tools ccache python2 python2-dev zip unzip tar \
+            gzip bzip2 rar unrar cpio jq
+          rm -rf ${{ github.workspace }}/*
 
-      - name: Cloning Kernel Source
-        run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
+      - name: Clone Kernel Source
+        run: |
+          git clone --single-branch --depth=1 --no-tags \
+            ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
-      - name: Cloning Toolchain
+      - name: Clone Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
+          FILE_NAME=$(basename "$TOOLCHAIN_URL")
           if [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.zip ]]; then
-            # Extract the file name without extension
-            FILE_NAME=$(basename "$TOOLCHAIN_URL")
             wget "$TOOLCHAIN_URL"
             if [[ "$FILE_NAME" == *.tar.gz ]]; then
               tar -xzf "$FILE_NAME" -C ${{ github.workspace }}
             elif [[ "$FILE_NAME" == *.zip ]]; then
               unzip "$FILE_NAME" -d ${{ github.workspace }}
             fi
-            # Move extracted toolchain to a subdirectory
-            mv "${{ github.workspace }}/$(basename "$FILE_NAME" .tar.gz)" "${{ github.workspace }}/toolchain" || mv "${{ github.workspace }}/$(basename "$FILE_NAME" .zip)" "${{ github.workspace }}/toolchain"
+            mv "${{ github.workspace }}/$(basename "$FILE_NAME" .tar.gz)" "${{ github.workspace }}/toolchain" || \
+            mv "${{ github.workspace }}/$(basename "$FILE_NAME" .zip)" "${{ github.workspace }}/toolchain"
             rm "$FILE_NAME"
           else
             git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" "${{ github.workspace }}/toolchain"
           fi
 
-      - name: Set-up Cache
+      - name: Set up Cache
         id: cache-out
         uses: actions/cache@v4.0.2
         with:
@@ -85,56 +88,52 @@ jobs:
           arch="arm64"
           
           export PATH="${clang_dir}/bin:$PATH"
-          
+
           make_defconfig() {
             start=$(date +"%s")
             make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
           }
-          
+
           compile() {
             cd "${{ github.workspace }}"
-            
             make -j$(nproc --all) \
-            O=out \
-            ARCH=${arch} \
-            CC=clang \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-            CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-            AR=llvm-ar \
-            LLVM_NM=llvm-nm \
-            OBJCOPY=llvm-objcopy \
-            LD=ld.lld \
-            NM=llvm-nm \
-            LLVM=1 \
-            LLVM_IAS=1
+              O=out \
+              ARCH=${arch} \
+              CC=clang \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+              AR=llvm-ar \
+              LLVM_NM=llvm-nm \
+              OBJCOPY=llvm-objcopy \
+              LD=ld.lld \
+              NM=llvm-nm \
+              LLVM=1 \
+              LLVM_IAS=1
           }
-          
+
           completion() {
             cd "${objdir}"
             compiled_image="arch/arm64/boot/Image"
             compiled_dtbo="arch/arm64/boot/dtbo.img"
             qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
-            
+
             if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
               git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
               cp "${compiled_image}" "${{ github.workspace }}"
               cp "${compiled_dtbo}" "${{ github.workspace }}"
-              
               if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
                 cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
               fi
-              
               mv -f "${compiled_image}" "$anykernel/Image"
               mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
               cd "$anykernel"
               zip -r AnyKernel.zip *
-              mv -- "AnyKernel.zip" "$zip_name"
-              mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
+              mv "AnyKernel.zip" "${{ github.workspace }}/$zip_name"
               rm -rf "$anykernel"
               end=$(date +"%s")
               diff=$((end - start))
-              echo -e "BUILD COMPLETED IN ${diff} SECONDS"
+              echo "BUILD COMPLETED IN ${diff} SECONDS"
             else
               echo "ERROR: Kernel compilation failed!"
               exit 1
@@ -147,7 +146,7 @@ jobs:
 
           cd "${{ github.workspace }}"
 
-          # Set-up file info
+          # Set up file info
           zip_file=$(find . -name '${{ github.event.inputs.KERNEL_NAME }}*.zip' -print -quit)
           echo "ZIP_FILE=$zip_file" >> $GITHUB_ENV
           echo "ZIP_NAME=$(basename "$zip_file" .zip)" >> $GITHUB_ENV
@@ -155,8 +154,6 @@ jobs:
           echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
           echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
 
-        continue-on-error: false
-  
       - name: Upload files to repository releases page
         uses: softprops/action-gh-release@v2.0.8
         with:
