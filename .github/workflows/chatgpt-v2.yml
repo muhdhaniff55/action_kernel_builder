@@ -25,7 +25,7 @@ on:
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/AnymoreProject/AnyKernel3 -b master'
+        default: 'https://github.com/AnymoreProject/AnyKernel3.git -b master'
 
 jobs:
   Kernel:
