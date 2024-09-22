@@ -1,9 +1,0 @@
-diff --git a/path/to/Kconfig b/path/to/Kconfig
-index abcdefg..hijklmn 100644
---- a/path/to/Kconfig
-+++ b/path/to/Kconfig
-@@ -X,Y +X,Y @@
-+config KRNL_SU
-+    bool "Enable KernelSU support"
-+    help
-+      Enable support for KernelSU.
