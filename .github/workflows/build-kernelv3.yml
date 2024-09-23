@@ -1,4 +1,4 @@
-name: Build Kernel v2
+name: Build Kernel v3
 
 on:
   workflow_dispatch:
@@ -37,20 +37,18 @@ jobs:
     permissions: write-all
     defaults:
       run:
-       shell: bash
-       working-directory: ${{ github.workspace }}
+        shell: bash
+        working-directory: ${{ github.workspace }}
 
     steps:
       - name: Set-up environment
         run: |
-          rm -rf ${{ github.workspace }}/*
           sudo apt-get update
-          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
-          sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
-          sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
-          
+          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm curl git wget zip unzip tar gzip bzip2 rar unrar cpio jq
+
       - name: Cloning Kernel Source
-        run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
+        run: |
+          git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }} || exit 1
 
       - name: Cloning Toolchain
         run: |
@@ -61,98 +59,112 @@ jobs:
             tar -xf toolchain.tar.gz -C ${{ github.workspace }}/toolchain --strip-components=1
             rm toolchain.tar.gz
           else
-            git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
+            git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain || exit 1
           fi
 
       - name: Set-up Cache
         id: cache-out
         uses: actions/cache@v4
         with:
-         path: ${{ github.workspace }}/out
-         key: ${{ github.event.inputs.KERNEL_SOURCE }}-out-
+          path: ${{ github.workspace }}/out
+          key: ${{ github.event.inputs.KERNEL_SOURCE }}-out-
+
+      - name: Setup KernelSU
+        if: github.event.inputs.KernelSU == 'true'
+        run: |
+          # Remove existing KernelSU directories if they exist
+          if [ -d "./KernelSU" ]; then
+            rm -rf "./KernelSU"
+          fi
+          if [ -d "./drivers/kernelsu" ]; then
+            rm -rf "./drivers/kernelsu"
+          fi
+
+          # Download and run the KernelSU setup script
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+
+          # Update the configuration file with KernelSU options
+          echo -e "CONFIG_KPROBES=y" >> arch/${{ github.workspace }}/configs/${{ github.event.inputs.CONFIG_FILE }}
+          echo -e "CONFIG_HAVE_KPROBES=y" >> arch/${{ github.workspace }}/configs/${{ github.event.inputs.CONFIG_FILE }}
+          echo -e "CONFIG_KPROBE_EVENTS=y" >> arch/${{ github.workspace }}/configs/${{ github.event.inputs.CONFIG_FILE }}
+
+          # Display the updated configuration
+          cat arch/${{ github.workspace }}/configs/${{ github.event.inputs.CONFIG_FILE }}
 
       - name: Start Compilation
+        env:
+          KERNEL_NAME: ${{ github.event.inputs.KERNEL_NAME }}
+          CONFIG_FILE: ${{ github.event.inputs.CONFIG_FILE }}
         run: |
-         objdir="${{ github.workspace }}/out"
-         anykernel="${{ github.workspace }}/anykernel"
-         clang_dir="${{ github.workspace }}/toolchain"
-         kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
-         zip_name="${kernel_name}-$(date +"%d-%m-%Y-%H%M").zip"
-         arch="arm64"
-         
-         export PATH="${clang_dir}/bin:$PATH"
-         
-         make_defconfig() {
-           start=$(date +"%s")
-           make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
-           }
-           
-         compile() {
-           cd "${{ github.workspace }}"
-           
-           make -j$(nproc --all) \
-           O=out \
-           ARCH=${arch} \
-           CC=clang \
-           CROSS_COMPILE=aarch64-linux-gnu- \
-           CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-           CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-           AR=llvm-ar \
-           LLVM_NM=llvm-nm \
-           OBJCOPY=llvm-objcopy \
-           LD=ld.lld \
-           NM=llvm-nm \
-           LLVM=1 \
-           LLVM_IAS=1
-           }
-           
-         completion() {
-           cd "${objdir}"
-           compiled_image="arch/arm64/boot/Image"
-           compiled_dtbo="arch/arm64/boot/dtbo.img"
-           qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
-           
-         if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
-           git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
-           cp "${compiled_image}" "${{ github.workspace }}"
-           cp "${compiled_dtbo}" "${{ github.workspace }}"
-           
-           if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
-               cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
-           fi
-           
-           mv -f "${compiled_image}" "$anykernel/Image"
-           mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
-           cd "$anykernel"
-           zip -r AnyKernel.zip *
-           mv -- "AnyKernel.zip" "$zip_name"
-           mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
-           rm -rf "$anykernel"
-           end=$(date +"%s")
-           diff=$((end - start))
-           echo -e "BUILD COMPLETED IN ${diff} SECONDS"
-         else
-           echo "ERROR: Kernel compilation failed!"
-         exit 1
-         fi
-         }
+          objdir="${{ github.workspace }}/out"
+          anykernel="${{ github.workspace }}/anykernel"
+          clang_dir="${{ github.workspace }}/toolchain"
+          zip_name="${KERNEL_NAME}-$(date +"%d-%m-%Y-%H%M").zip"
+          arch="arm64"
+          
+          export PATH="${clang_dir}/bin:$PATH"
+          
+          make_defconfig() {
+            make -s ARCH=${arch} O=${objdir} $CONFIG_FILE -j$(nproc --all) || exit 1
+          }
+          
+          compile() {
+            make -j$(nproc --all) \
+              O=out \
+              ARCH=${arch} \
+              CC=clang \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+              AR=llvm-ar \
+              LLVM_NM=llvm-nm \
+              OBJCOPY=llvm-objcopy \
+              LD=ld.lld \
+              NM=llvm-nm \
+              LLVM=1 \
+              LLVM_IAS=1 || exit 1
+          }
+          
+          completion() {
+            compiled_image="arch/arm64/boot/Image"
+            compiled_dtbo="arch/arm64/boot/dtbo.img"
+            qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
+            
+            if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
+              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel" || exit 1
+              cp "${compiled_image}" "${{ github.workspace }}"
+              cp "${compiled_dtbo}" "${{ github.workspace }}"
+              
+              if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
+                  cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
+              fi
+              
+              mv -f "${compiled_image}" "$anykernel/Image"
+              mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+              cd "$anykernel"
+              zip -r AnyKernel.zip *
+              mv -- "AnyKernel.zip" "$zip_name"
+              mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
+              rm -rf "$anykernel"
+              echo -e "BUILD COMPLETED"
+            else
+              echo "ERROR: Kernel compilation failed!"
+              exit 1
+            fi
+          }
 
-         make_defconfig
-         compile
-         completion
+          make_defconfig
+          compile
+          completion
 
-         cd "${{ github.workspace }}"
+          # Set-up file info
+          zip_file=$(find . -name '${{ github.event.inputs.KERNEL_NAME }}*.zip' -print -quit)
+          echo "ZIP_FILE=$zip_file" >> $GITHUB_ENV
+          echo "ZIP_NAME=$(basename "$zip_file" .zip)" >> $GITHUB_ENV
+          echo "RELEASE_DATE=$(date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
+          echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
+          echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
 
-         # Set-up file info
-         zip_file=$(find . -name '${{ github.event.inputs.KERNEL_NAME }}*.zip' -print -quit)
-         echo "ZIP_FILE=$zip_file" >> $GITHUB_ENV
-         echo "ZIP_NAME=$(basename "$zip_file" .zip)" >> $GITHUB_ENV
-         echo "RELEASE_DATE=$(date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
-         echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
-         echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
-
-        continue-on-error: false
-  
       - name: Upload files to repository releases page
         uses: softprops/action-gh-release@v1
         with:
@@ -164,4 +176,4 @@ jobs:
           name: ${{ env.ZIP_NAME }}
           tag_name: ${{ github.run_id }}
           body: |
-           Released on ${{ env.RELEASE_DATE }}
+            Released on ${{ env.RELEASE_DATE }}
