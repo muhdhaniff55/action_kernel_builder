@@ -63,7 +63,7 @@ jobs:
             tar -xf toolchain.tar.gz -C ${{ github.workspace }}/toolchain --strip-components=1
             rm toolchain.tar.gz
           else
-            git clone --single-branch --depth=1 --branch "$TOOLCHAIN_BRANCH" "$TOOLCHAIN_URL" ${{ github.workspace }}/toolchain
+            git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
           fi
 
       - name: Set-up Cache
