@@ -26,7 +26,7 @@ on:
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/GXC2356/AnyKernel3 -b ksu'
+        default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
       KernelSU:
         description: "True/False"
         default: true
