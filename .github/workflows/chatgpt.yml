@@ -6,15 +6,15 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/GXC2356/platform_kernel_xiaomi_vayu.git'
+        default: 'https://github.com/muhdhaniff55/android_kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'KernelSU'
+        default: 'main'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'SkylineKSU'
+        default: 'NeoPerf'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
@@ -26,7 +26,7 @@ on:
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
+        default: 'https://github.com/muhdhaniff55/AnyKernel3.git -b master'
 
 jobs:
   Kernel:
