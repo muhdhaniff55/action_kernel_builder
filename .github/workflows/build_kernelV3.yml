@@ -90,6 +90,9 @@ jobs:
 
       - name: Start Compilation
         run: |
+
+         rm -rf out/*
+        
          objdir="${{ github.workspace }}/out"
          anykernel="${{ github.workspace }}/anykernel"
          clang_dir="${{ github.workspace }}/toolchain"
