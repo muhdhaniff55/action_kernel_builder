@@ -1,4 +1,4 @@
-name: Aosp Build Kernel
+name: Build Kernel V3
 
 on:
   workflow_dispatch:
