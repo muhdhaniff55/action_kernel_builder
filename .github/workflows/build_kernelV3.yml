@@ -6,19 +6,19 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/AnymoreProject/kernel_xiaomi_vayu_upstream.git'
+        default: 'https://github.com/tejas101k/kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'ksu'
+        default: 'fourteen'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'AnymoreKSU_AOSP'
+        default: 'HeliosKSU'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
-        default: 'vayu_defconfig'
+        default: 'vayu_user_defconfig'
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
@@ -30,7 +30,7 @@ on:
       KERNELSU:
         description: "KernelSU setup"
         required: true
-        default: ''
+        default: 'true'
 
 jobs:
   Kernel:
@@ -114,14 +114,16 @@ jobs:
               O=out \
               ARCH=${arch} \
               CC=clang \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
               AR=llvm-ar \
-              NM=llvm-nm \
               LLVM_NM=llvm-nm \
               OBJCOPY=llvm-objcopy \
               LD=ld.lld \
+              NM=llvm-nm \
               LLVM=1 \
               LLVM_IAS=1
-
 
            }
            
