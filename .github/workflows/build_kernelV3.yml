@@ -54,6 +54,9 @@ jobs:
         run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
       - name: Cloning Toolchain
+        run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
+		
+      - name: Cloning Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
           if [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.tar.bz2 || "$TOOLCHAIN_URL" == *.tar.xz ]]; then
@@ -64,7 +67,7 @@ jobs:
           else
             git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
           fi
-
+		  
       - name: KernelSU Setup
         if: ${{ github.event.inputs.KERNELSU == 'true' }}
         run: |
@@ -83,21 +86,18 @@ jobs:
 
       - name: Set-up Cache
         id: cache-out
-        uses: actions/cache@v4
+        uses: actions/cache@v4.0.2
         with:
          path: ${{ github.workspace }}/out
          key: ${{ github.event.inputs.KERNEL_SOURCE }}-out-
 
       - name: Start Compilation
         run: |
-
-         rm -rf out/*
-        
          objdir="${{ github.workspace }}/out"
          anykernel="${{ github.workspace }}/anykernel"
          clang_dir="${{ github.workspace }}/toolchain"
          kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
-         zip_name="${kernel_name}-$(date +"%d-%m-%Y-%H%M").zip"
+         zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
          arch="arm64"
          
          export PATH="${clang_dir}/bin:$PATH"
@@ -111,20 +111,19 @@ jobs:
            cd "${{ github.workspace }}"
            
            make -j$(nproc --all) \
-              O=out \
-              ARCH=${arch} \
-              CC=clang \
-              CROSS_COMPILE=aarch64-linux-gnu- \
-              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-              AR=llvm-ar \
-              LLVM_NM=llvm-nm \
-              OBJCOPY=llvm-objcopy \
-              LD=ld.lld \
-              NM=llvm-nm \
-              LLVM=1 \
-              LLVM_IAS=1
-
+           O=out \
+           ARCH=${arch} \
+           CC=clang \
+           CROSS_COMPILE=aarch64-linux-gnu- \
+           CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+           CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+           AR=llvm-ar \
+           LLVM_NM=llvm-nm \
+           OBJCOPY=llvm-objcopy \
+           LD=ld.lld \
+           NM=llvm-nm \
+           LLVM=1 \
+           LLVM_IAS=1
            }
            
          completion() {
@@ -175,7 +174,7 @@ jobs:
         continue-on-error: false
   
       - name: Upload files to repository releases page
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2.0.8
         with:
           files: |
             ${{ github.workspace }}/*.dtb
