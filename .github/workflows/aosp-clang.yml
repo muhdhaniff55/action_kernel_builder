@@ -14,7 +14,7 @@ on:
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'AnymoreKSU_AOSP'
+        default: 'AnymoreKSU'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
@@ -82,6 +82,9 @@ jobs:
            O=out \
            ARCH=${arch} \
            CC=clang \
+           CROSS_COMPILE=aarch64-linux-gnu- \
+           CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+           CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
            AR=llvm-ar \
            LLVM_NM=llvm-nm \
            OBJCOPY=llvm-objcopy \
