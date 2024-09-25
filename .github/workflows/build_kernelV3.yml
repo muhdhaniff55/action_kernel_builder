@@ -6,31 +6,31 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/GXC2356/platform_kernel_xiaomi_vayu.git'
+        default: 'https://github.com/AnymoreProject/kernel_xiaomi_vayu_upstream.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'main'
+        default: 'ksu'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'SkylineKSU_WeebX'
+        default: 'AnymoreKSU_AOSP'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
-        default: 'vayu_user_defconfig'
+        default: 'vayu_defconfig'
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
-        default: 'https://github.com/XSans0/WeebX-Clang/releases/download/WeebX-Clang-20.0.0git-release/WeebX-Clang-20.0.0git.tar.gz'
+        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225.git -b 15.0'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/GXC2356/AnyKernel3 -b ksu'
+        default: 'https://github.com/AnymoreProject/AnyKernel3.git -b master'
       KERNELSU:
         description: "KernelSU setup"
         required: true
-        default: 'true'
+        default: ''
 
 jobs:
   Kernel:
