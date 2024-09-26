@@ -42,11 +42,15 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/*
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
-          sudo apt-get install -y build-essential git wget curl
+          sudo apt-get install -y build-essential git bc bison flex libssl-dev libelf-dev
+          sudo apt-get install -y gcc-aarch64-linux-gnu  # For ARM64
+          sudo apt-get install -y gcc-x86-linux-gnu  # For x86, if needed
 
       - name: Cloning Kernel Source
         run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
+
+      - name: Install GCC:
+        run: git clone git://gcc.gnu.org/git/gcc.git 
 
       - name: KernelSU Setup
         if: ${{ github.event.inputs.KERNELSU == 'true' }}
