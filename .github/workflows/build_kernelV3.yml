@@ -1,4 +1,4 @@
-name: Build Kernel V3
+name: Build Kernel v3
 
 on:
   workflow_dispatch:
@@ -6,15 +6,15 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/tejas101k/kernel_xiaomi_vayu.git'
+        default: 'https://github.com/GXC2356/platform_kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'fourteen'
+        default: 'KernelSU'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'HeliosKSU'
+        default: 'SkylineKSU'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
@@ -26,11 +26,11 @@ on:
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/GXC2356/AnyKernel3.git -b master'
-      KERNELSU:
+        default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
+	  KERNELSU:
         description: "KernelSU setup"
         required: true
-        default: 'true'
+        default: ' '
 
 jobs:
   Kernel:
@@ -46,24 +46,24 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/*
           sudo apt-get update
-          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm clang 
+          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
           sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
-          sudo apt-get install -y make bison flex libncurses5-dev g++ libc6-dev
-
+          
       - name: Cloning Kernel Source
         run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
       - name: Cloning Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
+
           if [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.tar.bz2 || "$TOOLCHAIN_URL" == *.tar.xz ]]; then
-            wget "$TOOLCHAIN_URL" -O toolchain.tar.gz
+            curl -L "$TOOLCHAIN_URL" -o toolchain.tar.gz
             mkdir -p ${{ github.workspace }}/toolchain
-            tar -xf toolchain.tar.gz -C ${{ github.workspace }}/toolchain --strip-components=1
+            tar -xf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
             rm toolchain.tar.gz
           else
-            git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
+            git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" ${{ github.workspace }}/toolchain
           fi
 
       - name: KernelSU Setup
@@ -82,9 +82,9 @@ jobs:
           echo -e "CONFIG_HAVE_KPROBES=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
           echo -e "CONFIG_KPROBE_EVENTS=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
 
-      - name: Set-up Cache
+	  - name: Set-up Cache
         id: cache-out
-        uses: actions/cache@v4.0.2
+        uses: actions/cache@v4
         with:
          path: ${{ github.workspace }}/out
          key: ${{ github.event.inputs.KERNEL_SOURCE }}-out-
@@ -172,7 +172,7 @@ jobs:
         continue-on-error: false
   
       - name: Upload files to repository releases page
-        uses: softprops/action-gh-release@v2.0.8
+        uses: softprops/action-gh-release@v1
         with:
           files: |
             ${{ github.workspace }}/*.dtb
