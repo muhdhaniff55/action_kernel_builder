@@ -6,15 +6,15 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/GXC2356/platform_kernel_xiaomi_vayu.git'
+        default: 'https://github.com/tejas101k/kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'main'
+        default: 'fourteen'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'SkylineKSU'
+        default: 'HeliosKSU'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
@@ -49,7 +49,7 @@ jobs:
           sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm clang 
           sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
-          sudo apt-get install -y make bison flex libncurses5-dev g++
+          sudo apt-get install -y make bison flex libncurses5-dev g++ libc6-dev
 
       - name: Cloning Kernel Source
         run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
