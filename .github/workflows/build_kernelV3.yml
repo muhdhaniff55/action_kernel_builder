@@ -10,7 +10,7 @@ on:
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'KernelSU'
+        default: 'main'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
