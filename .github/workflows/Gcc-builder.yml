@@ -52,7 +52,16 @@ jobs:
         run: |
          GCC_VERSION=14.2.0
           wget https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz
-          tar -xzf gcc-$GCC_VERSION.tar.gz
+          tar -xzf gcc-$GCC_VERSION.tar.gz -C ${{ github.workspace }}/toolchain
+          rm gcc-$GCC_VERSION.tar.gz
+
+      - name: Install GCC
+        run: |
+          GCC_VERSION=14.2.0
+          mkdir -p ${{ github.workspace }}/toolchain
+          wget https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz
+          tar -xzf gcc-$GCC_VERSION.tar.gz -C ${{ github.workspace }}/toolchain
+          rm gcc-$GCC_VERSION.tar.gz
 
       - name: KernelSU Setup
         if: ${{ github.event.inputs.KERNELSU == 'true' }}
