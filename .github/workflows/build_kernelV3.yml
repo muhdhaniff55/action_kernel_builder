@@ -29,8 +29,8 @@ on:
         default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
       KERNELSU:
         description: "KernelSU setup"
-        required: true
-        default: ' '
+        required: false
+        default: 'true'
 
 jobs:
   Kernel:
