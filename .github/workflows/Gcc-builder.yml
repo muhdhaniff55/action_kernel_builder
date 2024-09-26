@@ -49,7 +49,7 @@ jobs:
         run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
       - name: Install GCC
-        run: git clone git://gcc.gnu.org/git/gcc.git ${{ github.workspace }}/toolchain
+        run: git clone https://gcc.gnu.org/git/gcc.git ${{ github.workspace }}/toolchain
 
       - name: KernelSU Setup
         if: ${{ github.event.inputs.KERNELSU == 'true' }}
