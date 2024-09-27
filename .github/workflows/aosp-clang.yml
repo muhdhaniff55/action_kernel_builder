@@ -6,7 +6,7 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/muhdhaniff55/kernel_xiaomi_vayu_upstream.git'
+        default: 'https://github.com/AnymoreProject/kernel_xiaomi_vayu_upstream.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
@@ -26,7 +26,7 @@ on:
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/AnymoreProject/AnyKernel3.git -b master'
+        default: 'https://github.com/muhdhaniff55/AnyKernel3 -b anothermaster'
 
 jobs:
   Kernel:
