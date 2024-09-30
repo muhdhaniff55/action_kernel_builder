@@ -49,7 +49,7 @@ jobs:
           sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
           sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
-          
+
       - name: Cloning Kernel Source
         run: git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
@@ -97,17 +97,17 @@ jobs:
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
-          
+
           export PATH="${clang_dir}/bin:$PATH"
-          
+
           make_defconfig() {
             start=$(date +"%s")
             make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
           }
-          
+
           compile() {
             cd "${{ github.workspace }}"
-            
+
             make -j$(nproc --all) \
               O=out \
               ARCH=${arch} \
@@ -116,27 +116,27 @@ jobs:
               LD=ld.lld \
               AR=llvm-ar \
               NM=llvm-nm \
-  OBJDUMP=llvm-objdump \
-  STRIP=llvm-strip
+              OBJDUMP=llvm-objdump \
+              STRIP=llvm-strip \
               LLVM=1 \
               LLVM_IAS=1 
           }
-          
+
           completion() {
             cd "${objdir}"
             compiled_image="arch/arm64/boot/Image"
             compiled_dtbo="arch/arm64/boot/dtbo.img"
             qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
-            
+
             if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
               git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
               cp "${compiled_image}" "${{ github.workspace }}"
               cp "${compiled_dtbo}" "${{ github.workspace }}"
-              
+
               if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
-                  cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
+                cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
               fi
-              
+
               mv -f "${compiled_image}" "$anykernel/Image"
               mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
               cd "$anykernel"
@@ -168,7 +168,7 @@ jobs:
           echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
 
         continue-on-error: false
-  
+
       - name: Upload files to repository releases page
         uses: softprops/action-gh-release@v1
         with:
