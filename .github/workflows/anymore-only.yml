@@ -97,6 +97,8 @@ jobs:
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
+          export KBUILD_BUILD_HOST=rizalbrambe
+          export KBUILD_BUILD_USER=home
 
           export PATH="${clang_dir}/bin:$PATH"
 
