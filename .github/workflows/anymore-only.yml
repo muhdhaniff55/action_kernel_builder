@@ -6,7 +6,7 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/ZyCromerZ/Clang/releases/download/20.0.0git-20240930-release/Clang-20.0.0git-20240930.tar.gz'
+        default: 'https://github.com/AnymoreProject/kernel_xiaomi_vayu_upstream.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
@@ -22,7 +22,7 @@ on:
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
-        default: 'https://github.com/ZyCromerZ/Clang/releases/download/16.0.6-20240430-release/Clang-16.0.6-20240430.tar.gz'
+        default: 'https://github.com/ZyCromerZ/Clang/releases/download/20.0.0git-20240930-release/Clang-20.0.0git-20240930.tar.gz'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
