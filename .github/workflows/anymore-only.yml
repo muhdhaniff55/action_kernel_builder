@@ -112,21 +112,12 @@ jobs:
               O=out \
               ARCH=${arch} \
               CC=clang \
-              CLANG_TRIPLE=aarch64-linux-gnu- \
               CROSS_COMPILE=aarch64-linux-gnu- \
-              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
               LD=ld.lld \
               AR=llvm-ar \
               NM=llvm-nm \
-              STRIP=llvm-strip \
-              OBJCOPY=llvm-objcopy \
-              OBJDUMP=llvm-objdump \
-              READELF=llvm-readelf \
-              HOSTCC=clang \
-              HOSTCXX=clang++ \
-              HOSTAR=llvm-ar \
-              HOSTLD=ld.lld \
+  OBJDUMP=llvm-objdump \
+  STRIP=llvm-strip
               LLVM=1 \
               LLVM_IAS=1 
           }
