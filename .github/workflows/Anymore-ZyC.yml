@@ -113,6 +113,7 @@ jobs:
               ARCH=${arch} \
               CC=clang \
               CROSS_COMPILE=aarch64-linux-gnu- \
+              LD=ld.bfd \
               NM=llvm-nm \
               OBJDUMP=llvm-objdump \
               STRIP=llvm-strip 
