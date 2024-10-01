@@ -113,10 +113,9 @@ jobs:
               ARCH=${arch} \
               CC=clang \
               CROSS_COMPILE=aarch64-linux-gnu- \
-              
-  NM=llvm-nm \
-  OBJDUMP=llvm-objdump \
-  STRIP=llvm-strip 
+              NM=llvm-nm \
+              OBJDUMP=llvm-objdump \
+              STRIP=llvm-strip 
           }
 
           completion() {
