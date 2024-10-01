@@ -89,6 +89,15 @@ jobs:
          path: ${{ github.workspace }}/out
          key: ${{ github.event.inputs.KERNEL_SOURCE }}-out-
 
+      - name: EAS Configuration for Gaming
+  run: |
+    echo "CONFIG_EAS=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+    echo "CONFIG_SCHED_WALT=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+    echo "CONFIG_SCHED_MC=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+    echo "CONFIG_SCHED_SMT=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+    echo "CONFIG_PREEMPT=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+    echo "CONFIG_CPU_FREQ_GOV_INTERACTIVE=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+
       - name: Start Compilation
         run: |
          objdir="${{ github.workspace }}/out"
