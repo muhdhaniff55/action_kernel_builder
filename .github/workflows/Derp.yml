@@ -134,32 +134,22 @@ jobs:
             cd "${objdir}"
             compiled_image="arch/arm64/boot/Image"
             compiled_dtbo="arch/arm64/boot/dtbo.img"
-            qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
-           
-            if [[ -f ${compiled_image} && -f ${compiled_dtbo} ]]; then
-              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
-              cp "${compiled_image}" "${{ github.workspace }}"
-              cp "${compiled_dtbo}" "${{ github.workspace }}"
-               
-              if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
-                cp ${qcom_dtb}/*.dtb "${{ github.workspace }}"
-              fi
-               
-              mv -f "${compiled_image}" "$anykernel/Image"
-              mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
-              cat arch/arm64/boot/dts/qcom/*.dtb > "$anykernel/dtb"
-              cd "$anykernel"
-              zip -r AnyKernel.zip *
-              mv -- "AnyKernel.zip" "$zip_name"
-              mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
-              rm -rf "$anykernel"
-              end=$(date +"%s")
-              diff=$((end - start))
-              echo -e "BUILD COMPLETED IN ${diff} SECONDS"
-            else
-              echo "ERROR: Kernel compilation failed!"
-              exit 1
-            fi
+            
+            git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+            cp "${compiled_image}" "${{ github.workspace }}"
+            cp "${compiled_dtbo}" "${{ github.workspace }}"
+            
+            mv -f "${compiled_image}" "$anykernel/Image"
+            mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+            cat arch/arm64/boot/dts/qcom/*.dtb > "$anykernel/dtb"
+            cd "$anykernel"
+            zip -r AnyKernel.zip *
+            mv -- "AnyKernel.zip" "$zip_name"
+            mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
+            rm -rf "$anykernel"
+            end=$(date +"%s")
+            diff=$((end - start))
+            echo -e "BUILD COMPLETED IN ${diff} SECONDS"
           }
 
           make_defconfig
