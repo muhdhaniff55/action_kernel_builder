@@ -22,7 +22,7 @@ on:
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
-        default: 'https://github.com/ZyCromerZ/Clang/releases/download/20.0.0git-20240930-release/Clang-20.0.0git-20240930.tar.gz'
+        default: 'https://github.com/ZyCromerZ/Clang/releases/download/20.0.0git-20241007-release/Clang-20.0.0git-20241007.tar.gz'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
