@@ -147,6 +147,7 @@ jobs:
                
               mv -f "${compiled_image}" "$anykernel/Image"
               mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+              cat arch/arm64/boot/dts/qcom/*.dtb > "$anykernel/dtb"
               cd "$anykernel"
               zip -r AnyKernel.zip *
               mv -- "AnyKernel.zip" "$zip_name"
