@@ -26,7 +26,7 @@ on:
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/muhdhaniff55/AnyKernel3.git -b anothermaster'
+        default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
       KERNELSU:
         description: "KernelSU setup"
         required: false
@@ -99,8 +99,8 @@ jobs:
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
-          export KBUILD_BUILD_HOST=AnymoreProject
-          export KBUILD_BUILD_USER=t.me
+          export KBUILD_BUILD_HOST=Newehh
+          export KBUILD_BUILD_USER=home
 
           export PATH="${clang_dir}/bin:$PATH"
 
