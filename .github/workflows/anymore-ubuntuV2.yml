@@ -14,7 +14,7 @@ on:
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'AnymoreKSU_Ninja'
+        default: 'AnymoreKSU'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
@@ -38,10 +38,11 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/*
           sudo apt-get update
-          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
+          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm ninja-build
           sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
-          sudo apt-get install -y device-tree-compiler ninja-build clang-tools libncurses5-dev git-lfs flex bison pkg-config
+          sudo apt-get install -y device-tree-compiler
+          sudo apt-get install -y clang-tools libncurses5-dev git-lfs flex bison pkg-config
 
       - name: Cloning Kernel Source
         run: |
@@ -66,21 +67,22 @@ jobs:
 
           export PATH="/usr/bin:$PATH"
 
-          # Configuration step to create Ninja files
-          configure_ninja() {
-            cd "${{ github.workspace }}"
-            make ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
-            cd "${objdir}"
-            make ninja CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- LD=ld.lld DTC_EXT=dtc
+          configure() {
+            start=$(date +"%s")
+            export KBUILD_OUTPUT=${objdir}
+            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
           }
 
-          # Compilation step using Ninja
           compile() {
-            cd "${objdir}"
-            ninja -j$(nproc --all)
+            cd "${{ github.workspace }}"
+            ninja -C "${objdir}" \
+              CC=clang \
+              CLANG_TRIPLE=aarch64-linux-gnu- \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              LD=ld.lld \
+              DTC_EXT=dtc
           }
 
-          # Finalizing the build
           completion() {
             cd "${objdir}"
             compiled_image="arch/arm64/boot/Image"
@@ -103,8 +105,7 @@ jobs:
             echo -e "BUILD COMPLETED IN ${diff} SECONDS"
           }
 
-          start=$(date +"%s")
-          configure_ninja
+          configure
           compile
           completion
 
