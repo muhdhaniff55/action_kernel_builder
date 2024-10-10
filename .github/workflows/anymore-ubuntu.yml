@@ -1,4 +1,4 @@
-name: Anymore Only
+name: Anymore Ubuntu
 
 on:
   workflow_dispatch:
