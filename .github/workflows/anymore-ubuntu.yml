@@ -23,10 +23,6 @@ on:
         description: "Clone URL of your AnyKernel including branch"
         required: true
         default: 'https://github.com/muhdhaniff55/AnyKernel3.git -b anothermaster'
-      KERNELSU:
-        description: "KernelSU setup"
-        required: false
-        default: 'false'
 
 jobs:
   Kernel:
@@ -46,26 +42,11 @@ jobs:
           sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
           sudo apt-get install -y device-tree-compiler
+          sudo apt-get install -y clang-tools libncurses5-dev git-lfs flex bison pkg-config
 
       - name: Cloning Kernel Source
         run: |
           git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
-
-      - name: KernelSU Setup
-        if: ${{ github.event.inputs.KERNELSU == 'true' }}
-        run: |
-          if [ -d "./KernelSU" ]; then
-            rm -rf "./KernelSU"
-          fi
-          if [ -d "./drivers/kernelsu" ]; then
-            rm -rf "./drivers/kernelsu"
-          fi
-
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
-
-          echo -e "CONFIG_KPROBES=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-          echo -e "CONFIG_HAVE_KPROBES=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-          echo -e "CONFIG_KPROBE_EVENTS=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
 
       - name: Set-up Cache
         id: cache-out
@@ -95,28 +76,13 @@ jobs:
             cd "${{ github.workspace }}"
 
             make -j$(nproc --all) \
-              O=out \
+              O=${objdir} \
               ARCH=${arch} \
-              SUBARCH=arm64 \
-              DTC_EXT=dtc \
               CC=clang \
               CLANG_TRIPLE=aarch64-linux-gnu- \
               CROSS_COMPILE=aarch64-linux-gnu- \
-              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
               LD=ld.lld \
-              AR=llvm-ar \
-              NM=llvm-nm \
-              STRIP=llvm-strip \
-              OBJCOPY=llvm-objcopy \
-              OBJDUMP=llvm-objdump \
-              READELF=llvm-readelf \
-              HOSTCC=clang \
-              HOSTCXX=clang++ \
-              HOSTAR=llvm-ar \
-              HOSTLD=ld.lld \
-              LLVM=1 \
-              LLVM_IAS=1
+              DTC_EXT=dtc
           }
 
           completion() {
