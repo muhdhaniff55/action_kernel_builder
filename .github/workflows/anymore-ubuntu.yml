@@ -26,7 +26,7 @@ on:
 
 jobs:
   Kernel:
-    runs-on: ubuntu-jammy
+    runs-on: ubuntu-latest
 
     steps:
       - name: Set-up environment
