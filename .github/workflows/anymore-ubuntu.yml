@@ -69,7 +69,7 @@ jobs:
             cd "${{ github.workspace }}"
             make -j$(nproc --all) \
               O=out \
-              ARCH=arm64 \
+              ARCH=${arch} \
               CC=clang \
               DTC_EXT=dtc \
               CROSS_COMPILE=aarch64-linux-gnu- \
