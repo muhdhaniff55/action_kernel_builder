@@ -72,13 +72,14 @@ jobs:
           compile() {
             cd "${{ github.workspace }}"
             make -j$(nproc --all) \
-              O=${objdir} \
-              ARCH=${arch} \
+              O=out \
+              ARCH=arm64 \
               CC=clang \
-              CLANG_TRIPLE=aarch64-linux-gnu- \
+              DTC_EXT=dtc \
               CROSS_COMPILE=aarch64-linux-gnu- \
               LD=ld.lld \
-              DTC_EXT=dtc
+              AR=llvm-ar \
+              NM=llvm-nm
           }
 
           completion() {
