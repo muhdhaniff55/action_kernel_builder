@@ -1,4 +1,4 @@
-name: Anymore UbuntuxNinja
+name: Anymore Ubuntu
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'AnymoreKSUxNinja'
+        default: 'AnymoreKSU'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
@@ -66,23 +66,21 @@ jobs:
 
           export PATH="/usr/bin:$PATH"
 
-          make_defconfig() {
-            start=$(date +"%s")
-            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
-          }
-
-          compile() {
+          # Configuration step to create Ninja files
+          configure_ninja() {
             cd "${{ github.workspace }}"
-            export KBUILD_OUTPUT=${objdir}
-            ninja -C ${objdir} -j$(nproc --all) \
-              ARCH=${arch} \
-              CC=clang \
-              CLANG_TRIPLE=aarch64-linux-gnu- \
-              CROSS_COMPILE=aarch64-linux-gnu- \
-              LD=ld.lld \
-              DTC_EXT=dtc
+            make ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+            cd "${objdir}"
+            make ninja CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- LD=ld.lld DTC_EXT=dtc
           }
 
+          # Compilation step using Ninja
+          compile() {
+            cd "${objdir}"
+            ninja -j$(nproc --all)
+          }
+
+          # Finalizing the build
           completion() {
             cd "${objdir}"
             compiled_image="arch/arm64/boot/Image"
@@ -105,7 +103,8 @@ jobs:
             echo -e "BUILD COMPLETED IN ${diff} SECONDS"
           }
 
-          make_defconfig
+          start=$(date +"%s")
+          configure_ninja
           compile
           completion
 
