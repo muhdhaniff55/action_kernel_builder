@@ -26,21 +26,19 @@ on:
 
 jobs:
   Kernel:
-    runs-on: ubuntu-latest
-    permissions: write-all
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ github.workspace }}
+    runs-on: ubuntu-jammy
 
     steps:
       - name: Set-up environment
         run: |
           rm -rf ${{ github.workspace }}/*
           sudo apt-get update
-          sudo apt-get upgrade -y
-          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
-          sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
+          sudo apt-get install -y wget gnupg
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main" | sudo tee /etc/apt/sources.list.d/llvm-toolchain.list
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev clang
+          sudo apt-get install -y curl git ftp lftp libarchive-tools ccache python2 python2-dev
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
           sudo apt-get install -y device-tree-compiler
           sudo apt-get install -y clang-tools libncurses5-dev git-lfs flex bison pkg-config
@@ -66,8 +64,6 @@ jobs:
           export KBUILD_BUILD_HOST=AnymoreProject
           export KBUILD_BUILD_USER=t.me
 
-          export PATH="/usr/bin:$PATH"
-
           make_defconfig() {
             start=$(date +"%s")
             make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
@@ -75,7 +71,6 @@ jobs:
 
           compile() {
             cd "${{ github.workspace }}"
-
             make -j$(nproc --all) \
               O=${objdir} \
               ARCH=${arch} \
@@ -121,8 +116,6 @@ jobs:
           echo "RELEASE_DATE=$(date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
           echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
           echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
-
-        continue-on-error: false
 
       - name: Upload files to repository releases page
         uses: softprops/action-gh-release@v1
