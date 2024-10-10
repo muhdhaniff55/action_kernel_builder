@@ -38,6 +38,7 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/*
           sudo apt-get update
+          sudo apt-get upgrade -y
           sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm ninja-build
           sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
@@ -65,46 +66,55 @@ jobs:
           export KBUILD_BUILD_HOST=AnymoreProject
           export KBUILD_BUILD_USER=t.me
 
-          export PATH="/usr/bin:$PATH"
+          # Clean up previous builds
+          rm -rf "${objdir}"
+          mkdir -p "${objdir}"
 
+          export KBUILD_OUTPUT=${objdir}
+
+          # Configure
           configure() {
-            start=$(date +"%s")
-            export KBUILD_OUTPUT=${objdir}
-            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+              start=$(date +"%s")
+              make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all) || { echo "Configuration failed"; exit 1; }
+              echo "Configuration completed."
           }
 
+          # Compile
           compile() {
-            cd "${{ github.workspace }}"
-            ninja -C "${objdir}" \
-              CC=clang \
-              CLANG_TRIPLE=aarch64-linux-gnu- \
-              CROSS_COMPILE=aarch64-linux-gnu- \
-              LD=ld.lld \
-              DTC_EXT=dtc
+              cd "${{ github.workspace }}"
+              ninja -C "${objdir}" \
+                CC=clang \
+                CLANG_TRIPLE=aarch64-linux-gnu- \
+                CROSS_COMPILE=aarch64-linux-gnu- \
+                LD=ld.lld \
+                DTC_EXT=dtc || { echo "Ninja build failed"; exit 1; }
+              echo "Compilation completed."
           }
 
+          # Completion
           completion() {
-            cd "${objdir}"
-            compiled_image="arch/arm64/boot/Image"
-            compiled_dtbo="arch/arm64/boot/dtbo.img"
+              cd "${objdir}"
+              compiled_image="arch/arm64/boot/Image"
+              compiled_dtbo="arch/arm64/boot/dtbo.img"
 
-            git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
-            cp "${compiled_image}" "${{ github.workspace }}"
-            cp "${compiled_dtbo}" "${{ github.workspace }}"
+              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+              cp "${compiled_image}" "${{ github.workspace }}"
+              cp "${compiled_dtbo}" "${{ github.workspace }}"
 
-            mv -f "${compiled_image}" "$anykernel/Image"
-            mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
-            cat arch/arm64/boot/dts/qcom/sm8150-v2*.dtb > "$anykernel/dtb"
-            cd "$anykernel"
-            zip -r AnyKernel.zip *
-            mv -- "AnyKernel.zip" "$zip_name"
-            mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
-            rm -rf "$anykernel"
-            end=$(date +"%s")
-            diff=$((end - start))
-            echo -e "BUILD COMPLETED IN ${diff} SECONDS"
+              mv -f "${compiled_image}" "$anykernel/Image"
+              mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+              cat arch/arm64/boot/dts/qcom/sm8150-v2*.dtb > "$anykernel/dtb"
+              cd "$anykernel"
+              zip -r AnyKernel.zip *
+              mv -- "AnyKernel.zip" "$zip_name"
+              mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
+              rm -rf "$anykernel"
+              end=$(date +"%s")
+              diff=$((end - start))
+              echo -e "BUILD COMPLETED IN ${diff} SECONDS"
           }
 
+          # Execute functions
           configure
           compile
           completion
