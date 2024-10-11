@@ -87,6 +87,8 @@ jobs:
           export KBUILD_BUILD_USER=home
 
           export PATH="${clang_dir}/bin:$PATH"
+          export CFLAGS="-O2 -flto=thin -fno-strict-aliasing -mllvm -polly"
+          export HOSTCFLAGS="-O2 -flto=thin -fno-strict-aliasing -mllvm -polly"
 
           make_defconfig() {
             start=$(date +"%s")
@@ -102,8 +104,6 @@ jobs:
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
-              CFLAGS="-O2 -flto=thin -fno-strict-aliasing -mllvm -polly" \
-              HOSTCFLAGS="-O2 -flto=thin -fno-strict-aliasing -mllvm -polly" \
               CLANG_TRIPLE=aarch64-linux-gnu- \
               CROSS_COMPILE=aarch64-linux-gnu- \
               CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
