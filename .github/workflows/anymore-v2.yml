@@ -66,8 +66,7 @@ jobs:
 
       - name: Kernel Configuration
         run: |
-          echo "CONFIG_LTO=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-          echo "CONFIG_LTO_CLANG=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+          echo "CONFIG_POLLY=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
 
       - name: Set-up Cache
         id: cache-out
