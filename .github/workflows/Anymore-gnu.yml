@@ -51,9 +51,6 @@ jobs:
         run: |
           git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
-      - name: Kernel Configuration
-        run: |
-          echo "CONFIG_POLLY=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
           
       - name: Cloning Toolchain
         run: |
@@ -102,8 +99,8 @@ jobs:
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
-              CFLAGS="-O2 -fpolly -flto=thin" \
-              HOSTCFLAGS="-O2 -fpolly -flto=thin" \
+              CFLAGS="-O2 -flto=thin" \
+              HOSTCFLAGS="-O2 -flto=thin" \
               CROSS_COMPILE=${clang_dir}/aarch64-linux-gnu- \
               AR=llvm-ar \
               NM=llvm-nm \
