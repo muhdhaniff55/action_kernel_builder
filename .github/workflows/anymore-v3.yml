@@ -54,21 +54,20 @@ jobs:
       - name: Cloning Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
-mkdir -p ${{ github.workspace }}/toolchain
+          mkdir -p ${{ github.workspace }}/toolchain
 
-if [[ $TOOLCHAIN_URL == *.txt ]]; then
-  actual_url=$(curl -s "$TOOLCHAIN_URL")
-  curl -L "$actual_url" -o toolchain.tar.gz
-  tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
-  rm toolchain.tar.gz
-elif [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.tar.bz2 || "$TOOLCHAIN_URL" == *.tar.xz ]]; then
-  curl -L "$TOOLCHAIN_URL" -o toolchain.tar.gz
-  tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
-  rm toolchain.tar.gz
-else
-  git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" ${{ github.workspace }}/toolchain
-fi
-
+          if [[ $TOOLCHAIN_URL == *.txt ]]; then
+            actual_url=$(curl -s "$TOOLCHAIN_URL")
+            curl -L "$actual_url" -o toolchain.tar.gz
+            tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
+            rm toolchain.tar.gz
+          elif [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.tar.bz2 || "$TOOLCHAIN_URL" == *.tar.xz ]]; then
+            curl -L "$TOOLCHAIN_URL" -o toolchain.tar.gz
+            tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
+            rm toolchain.tar.gz
+          else
+            git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" ${{ github.workspace }}/toolchain
+          fi
 
       - name: Kernel Configuration
         run: |
