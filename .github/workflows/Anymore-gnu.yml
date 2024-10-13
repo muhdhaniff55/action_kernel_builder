@@ -85,7 +85,7 @@ jobs:
           arch="arm64"
           export KBUILD_BUILD_HOST=Newehh
           export KBUILD_BUILD_USER=home
-          LINKER="lld"
+          export LD=gcc
 
           export PATH="${clang_dir}/bin:$PATH"
           
