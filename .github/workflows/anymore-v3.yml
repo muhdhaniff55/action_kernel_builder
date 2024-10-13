@@ -112,7 +112,8 @@ jobs:
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
-              LD=ld.gold \
+              CXX=clang++ \
+              LD=ld.lld \
               AR=llvm-ar \
               NM=llvm-nm \
               STRIP=llvm-strip \
