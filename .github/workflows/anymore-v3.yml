@@ -22,7 +22,7 @@ on:
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
-        default: 'https://raw.githubusercontent.com/ZyCromerZ/Clang/main/Clang-main-link.txt'
+        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225.git -b 14.0'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
@@ -45,7 +45,7 @@ jobs:
           sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
           sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
-          sudo apt-get install -y device-tree-compiler make
+          sudo apt-get install -y device-tree-compiler
 
       - name: Cloning Kernel Source
         run: |
@@ -68,6 +68,10 @@ jobs:
             git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
           fi
 
+      - name: Kernel Configuration
+        run: |
+          echo "CONFIG_POLLY=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+
       - name: Set-up Cache
         id: cache-out
         uses: actions/cache@v4
@@ -87,7 +91,7 @@ jobs:
           export KBUILD_BUILD_USER=home
 
           export PATH="${clang_dir}/bin:$PATH"
-
+          
           make_defconfig() {
             start=$(date +"%s")
             make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
@@ -97,12 +101,17 @@ jobs:
             cd "${{ github.workspace }}"
 
             make -j$(nproc --all) \
-              O=${objdir} \
+              O=out \
               ARCH=${arch} \
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
-              CXX=clang++ \
+              CFLAGS="-O2 -fpolly -flto=thin" \
+              HOSTCFLAGS="-O2 -fpolly -flto=thin" \
+              CLANG_TRIPLE=aarch64-linux-gnu- \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
               LD=ld.lld \
               AR=llvm-ar \
               NM=llvm-nm \
@@ -111,9 +120,7 @@ jobs:
               OBJDUMP=llvm-objdump \
               READELF=llvm-readelf \
               LLVM=1 \
-              LLVM_IAS=1 \
-              CROSS_COMPILE=aarch64-linux-gnu- \
-              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- 
+              LLVM_IAS=1
           }
 
           completion() {
