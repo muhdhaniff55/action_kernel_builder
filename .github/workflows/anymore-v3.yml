@@ -121,6 +121,7 @@ jobs:
               LLVM=1 \
               LLVM_IAS=1 \
               CFLAGS="-O2"
+              EXTRA_CFLAGS="-O2"
           }
 
           completion() {
