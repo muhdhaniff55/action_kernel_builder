@@ -113,6 +113,12 @@ jobs:
               DTC_EXT=dtc \
               CC=clang \
               LD=aarch64-linux-gnu-ld.bfd \
+              AR=llvm-ar \
+              NM=llvm-nm \
+              STRIP=llvm-strip \
+              OBJCOPY=llvm-objcopy \
+              OBJDUMP=llvm-objdump \
+              READELF=llvm-readelf \
               LLVM=1 \
               LLVM_IAS=1 \
               CROSS_COMPILE=aarch64-linux-gnu- \
