@@ -87,6 +87,7 @@ jobs:
           export KBUILD_BUILD_USER=home
 
           export PATH="${clang_dir}/bin:$PATH"
+          export LD_LIBRARY_PATH="${clang_dir}/lib:$LD_LIBRARY_PATH"
           
           make_defconfig() {
             start=$(date +"%s")
