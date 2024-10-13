@@ -89,12 +89,11 @@ jobs:
 
           export PATH="${clang_dir}/bin:$PATH"
 
-          export CFLAGS="-O2"
-          export EXTRA_CFLAGS="-O2"
-
           
           make_defconfig() {
             start=$(date +"%s")
+            export CFLAGS="-O2"
+            export EXTRA_CFLAGS="-O2"
             make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
           }
 
@@ -123,9 +122,7 @@ jobs:
               HOSTAR=llvm-ar \
               HOSTLD=ld.lld \
               LLVM=1 \
-              LLVM_IAS=1 \
-              CFLAGS="-O2"
-              EXTRA_CFLAGS="-O2"
+              LLVM_IAS=1
           }
 
           completion() {
