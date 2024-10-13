@@ -54,7 +54,6 @@ jobs:
       - name: Cloning Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
-
           if [[ $TOOLCHAIN_URL == *.txt ]]; then
             wget "$(curl -s $TOOLCHAIN_URL)" -O "toolchain.tar.gz"
             mkdir -p ${{ github.workspace }}/toolchain
@@ -100,17 +99,24 @@ jobs:
             export CFLAGS="-O2"
             export EXTRA_CFLAGS="-O2"
 
+            # Print optimization flags
+            echo "CFLAGS: $CFLAGS"
+            echo "EXTRA_CFLAGS: $EXTRA_CFLAGS"
+
+            # Enable LTO
+            scripts/config --file ${objdir}/.config -e LTO_CLANG -d THINLTO
+
             make -j$(nproc --all) \
-              O=out \
+              O=${objdir} \
               ARCH=${arch} \
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
-              ARCH=arm64 \
               LLVM=1 \
               LLVM_IAS=1 \
               CROSS_COMPILE=aarch64-linux-gnu- \
-              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- 
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+              V=1
           }
 
           completion() {
