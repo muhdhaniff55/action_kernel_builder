@@ -82,7 +82,6 @@ jobs:
           arch="arm64"
           export KBUILD_BUILD_HOST=Newehh
           export KBUILD_BUILD_USER=home
-          export CROSS_COMPILE="${TOOLCHAIN_DIR}/bin/aarch64-linux-gnu-"
           export KBUILD_LDFLAGS="-fuse-ld=bfd"
 
           export PATH="${clang_dir}/bin:$PATH"
@@ -105,6 +104,7 @@ jobs:
               HOSTCFLAGS="-O2 -flto=thin" \
               AR=llvm-ar \
               NM=llvm-nm \
+              LD=ld.bfd \
               STRIP=llvm-strip \
               OBJCOPY=llvm-objcopy \
               OBJDUMP=llvm-objdump \
