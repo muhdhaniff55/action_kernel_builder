@@ -55,7 +55,7 @@ jobs:
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
 
-          if $TOOLCHAIN_URL == *.txt then
+          if [[ $TOOLCHAIN_URL == *.txt ]]; then
             wget "$(curl -s $TOOLCHAIN_URL)" -O "toolchain.tar.gz"
             mkdir -p ${{ github.workspace }}/toolchain
             tar -xf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
