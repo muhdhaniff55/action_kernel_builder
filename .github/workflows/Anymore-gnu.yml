@@ -103,8 +103,8 @@ jobs:
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
-              CFLAGS="-O2 -fpolly -flto=thin" \
-              HOSTCFLAGS="-O2 -fpolly -flto=thin" \
+              CFLAGS="-O2 -flto=thin" \
+              HOSTCFLAGS="-O2 -flto=thin" \
               CROSS_COMPILE=aarch64-linux-gnu- \
               AR=llvm-ar \
               NM=llvm-nm \
