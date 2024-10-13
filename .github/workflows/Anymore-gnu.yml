@@ -82,6 +82,7 @@ jobs:
           arch="arm64"
           export KBUILD_BUILD_HOST=Newehh
           export KBUILD_BUILD_USER=home
+          export KBUILD_LDFLAGS="-fuse-ld=bfd"
 
           export PATH="${clang_dir}/bin:$PATH"
           
@@ -101,7 +102,7 @@ jobs:
               CC=clang \
               CFLAGS="-O2 -flto=thin" \
               HOSTCFLAGS="-O2 -flto=thin" \
-              CROSS_COMPILE=${clang_dir}/aarch64-linux-gnu- \
+              CROSS_COMPILE=aarch64-linux-gnu- \
               AR=llvm-ar \
               NM=llvm-nm \
               STRIP=llvm-strip \
