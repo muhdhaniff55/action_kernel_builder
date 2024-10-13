@@ -64,10 +64,6 @@ jobs:
             git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
           fi
 
-      - name: Kernel Configuration
-        run: |
-          echo "CONFIG_POLLY=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-
       - name: Set-up Cache
         id: cache-out
         uses: actions/cache@v4
@@ -87,7 +83,6 @@ jobs:
           export KBUILD_BUILD_USER=home
 
           export PATH="${clang_dir}/bin:$PATH"
-          export LD_LIBRARY_PATH="${clang_dir}/lib:$LD_LIBRARY_PATH"
           
           make_defconfig() {
             start=$(date +"%s")
@@ -103,8 +98,6 @@ jobs:
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
-              CFLAGS="-O2 -flto=thin" \
-              HOSTCFLAGS="-O2 -flto=thin" \
               CLANG_TRIPLE=aarch64-linux-gnu- \
               CROSS_COMPILE=aarch64-linux-gnu- \
               CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
