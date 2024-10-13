@@ -112,8 +112,6 @@ jobs:
               HOSTCC=clang \
               HOSTCXX=clang++ \
               HOSTAR=llvm-ar \
-              LLVM=1 \
-              LLVM_IAS=1
           }
 
           completion() {
