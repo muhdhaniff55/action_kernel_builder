@@ -112,7 +112,7 @@ jobs:
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
-              LD=aarch64-linux-gnu-ld.bfd \
+              LD=ld.gold \
               AR=llvm-ar \
               NM=llvm-nm \
               STRIP=llvm-strip \
