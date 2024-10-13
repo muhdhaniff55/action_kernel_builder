@@ -112,7 +112,7 @@ jobs:
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
-              LD=ld.lld \
+              LD=aarch64-linux-gnu-ld.bfd \
               LLVM=1 \
               LLVM_IAS=1 \
               CROSS_COMPILE=aarch64-linux-gnu- \
