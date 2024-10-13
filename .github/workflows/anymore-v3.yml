@@ -96,16 +96,6 @@ jobs:
           compile() {
             cd "${{ github.workspace }}"
 
-            export CFLAGS="-O2"
-            export EXTRA_CFLAGS="-O2"
-
-            # Print optimization flags
-            echo "CFLAGS: $CFLAGS"
-            echo "EXTRA_CFLAGS: $EXTRA_CFLAGS"
-
-            # Enable LTO
-            scripts/config --file ${objdir}/.config -e LTO_CLANG -d THINLTO
-
             make -j$(nproc --all) \
               O=${objdir} \
               ARCH=${arch} \
