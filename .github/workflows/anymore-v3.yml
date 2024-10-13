@@ -88,6 +88,10 @@ jobs:
           export KBUILD_BUILD_USER=home
 
           export PATH="${clang_dir}/bin:$PATH"
+
+          export CFLAGS="-O2"
+          export EXTRA_CFLAGS="-O2"
+
           
           make_defconfig() {
             start=$(date +"%s")
