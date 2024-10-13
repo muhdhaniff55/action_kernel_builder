@@ -89,6 +89,11 @@ jobs:
 
           export PATH="${clang_dir}/bin:$PATH"
 
+          make_defconfig() {
+            start=$(date +"%s")
+            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+          }
+
           compile() {
             start=$(date +"%s")
             cd "${{ github.workspace }}"
@@ -143,6 +148,7 @@ jobs:
             echo -e "BUILD COMPLETED IN ${diff} SECONDS"
           }
 
+          make_defconfig
           compile
           completion
 
