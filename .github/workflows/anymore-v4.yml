@@ -1,4 +1,4 @@
-name: Anymore v3
+name: Anymore v4
 
 on:
   workflow_dispatch:
