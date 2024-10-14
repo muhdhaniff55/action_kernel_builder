@@ -69,10 +69,6 @@ jobs:
             git clone --single-branch --depth=1 --no-tags "$TOOLCHAIN_URL" ${{ github.workspace }}/toolchain
           fi
 
-      - name: Kernel Configuration
-        run: |
-          echo "CONFIG_POLLY=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-
       - name: Set-up Cache
         id: cache-out
         uses: actions/cache@v4
@@ -96,7 +92,7 @@ jobs:
           make_defconfig() {
             start=$(date +"%s")
             make -s ARCH=${arch} O=${objdir} CC=clang ${{ github.event.inputs.CONFIG_FILE }} \
-            LTO_CLANG=y THINLTO=n CFLAGS="-O2" -j$(nproc --all)
+            LTO_CLANG=y THINLTO=n CONFIG_POLLY=y CFLAGS="-O2" -j$(nproc --all)
 
           }
 
