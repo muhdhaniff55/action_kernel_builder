@@ -22,7 +22,7 @@ on:
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
-        default: 'https://raw.githubusercontent.com/ZyCromerZ/Clang/main/Clang-main-link.txt'
+        default: 'https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r536225.tar.gz'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
