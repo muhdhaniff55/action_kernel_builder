@@ -118,7 +118,7 @@ jobs:
               OBJDUMP=llvm-objdump \
               READELF=llvm-readelf \
               LLVM=1 \
-              LLVM_IAS=1 \
+              LLVM_IAS=1
           }
 
           completion() {
