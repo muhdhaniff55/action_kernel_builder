@@ -69,10 +69,6 @@ jobs:
             git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
           fi
 
-      - name: Kernel Configuration
-        run: |
-          echo "CONFIG_POLLY=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-
       - name: Set-up Cache
         id: cache-out
         uses: actions/cache@v4
