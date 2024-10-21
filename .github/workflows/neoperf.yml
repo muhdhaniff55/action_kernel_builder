@@ -6,11 +6,11 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/chiteroman/android_kernel_xiaomi_sm8150.git'
+        default: 'https://github.com/chiteroman/android_kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: '14.0'
+        default: 'main'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
@@ -22,7 +22,7 @@ on:
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
-        default: 'https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240723-release/Clang-19.0.0git-20240723.tar.gz'
+        default: 'https://raw.githubusercontent.com/ZyCromerZ/Clang/main/Clang-main-link.txt'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
@@ -30,7 +30,7 @@ on:
       KERNELSU:
         description: "KernelSU setup"
         required: false
-        default: 'false'
+        default: 'true'
 
 jobs:
   Kernel:
@@ -58,10 +58,16 @@ jobs:
       - name: Cloning Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
-          if [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.tar.bz2 || "$TOOLCHAIN_URL" == *.tar.xz ]]; then
+          mkdir -p ${{ github.workspace }}/toolchain
+
+          if [[ $TOOLCHAIN_URL == *.txt ]]; then
+            actual_url=$(curl -s "$TOOLCHAIN_URL")
+            curl -L "$actual_url" -o toolchain.tar.gz
+            tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
+            rm toolchain.tar.gz
+          elif [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.tar.bz2 || "$TOOLCHAIN_URL" == *.tar.xz ]]; then
             curl -L "$TOOLCHAIN_URL" -o toolchain.tar.gz
-            mkdir -p ${{ github.workspace }}/toolchain
-            tar -xf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
+            tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
             rm toolchain.tar.gz
           else
             git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
@@ -98,6 +104,8 @@ jobs:
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
+          export KBUILD_BUILD_HOST=Newehh
+          export KBUILD_BUILD_USER=home
           
           export PATH="${clang_dir}/bin:$PATH"
           
@@ -179,7 +187,7 @@ jobs:
         continue-on-error: false
   
       - name: Upload files to repository releases page
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             ${{ github.workspace }}/*.dtb
