@@ -6,7 +6,7 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/AnymoreProject/kernel_xiaomi_vayu_upstream.git'
+        default: 'https://github.com/GXC2356/platform_kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
@@ -14,19 +14,19 @@ on:
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'AnymoreKSU'
+        default: 'SkylineKSU'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
-        default: 'vayu_defconfig'
+        default: 'vayu_user_defconfig'
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
-        default: 'https://github.com/ZyCromerZ/Clang/releases/download/20.0.0git-20240926-release/Clang-20.0.0git-20240926.tar.gz'
+        default: 'https://raw.githubusercontent.com/ZyCromerZ/Clang/main/Clang-main-link.txt'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/muhdhaniff55/AnyKernel3.git -b anothermaster'
+        default: 'https://github.com/GXC2356/AnyKernel3.git -b ksu'
       KERNELSU:
         description: "KernelSU setup"
         required: false
@@ -102,12 +102,14 @@ jobs:
          kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
          zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
          arch="arm64"
-         
+         export KBUILD_BUILD_HOST=Newehh
+         export KBUILD_BUILD_USER=home
+          
          export PATH="${clang_dir}/bin:$PATH"
          
          make_defconfig() {
            start=$(date +"%s")
-           make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+           make -s ARCH=${arch} CC=clang O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
            }
            
          compile() {
@@ -177,7 +179,7 @@ jobs:
         continue-on-error: false
   
       - name: Upload files to repository releases page
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             ${{ github.workspace }}/*.dtb
