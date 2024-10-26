@@ -98,6 +98,8 @@ jobs:
 
       - name: Start Compilation
         run: |
+          export TZ='Asia/Kuala_Lumpur'
+
           objdir="${{ github.workspace }}/out"
           anykernel="${{ github.workspace }}/anykernel"
           clang_dir="${{ github.workspace }}/toolchain"
@@ -110,58 +112,58 @@ jobs:
           export PATH="${clang_dir}/bin:$PATH"
 
           make_defconfig() {
-            start=$(date +"%s")
-            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+              start=$(date +"%s")
+              make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
           }
 
           compile() {
-            cd "${{ github.workspace }}"
+              cd "${{ github.workspace }}"
 
-            make -j$(nproc --all) \
-              O=out \
-              ARCH=${arch} \
-              SUBARCH=arm64 \
-              DTC_EXT=dtc \
-              CC=clang \
-              CLANG_TRIPLE=aarch64-linux-gnu- \
-              CROSS_COMPILE=aarch64-linux-gnu- \
-              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-              LD=ld.lld \
-              AR=llvm-ar \
-              NM=llvm-nm \
-              STRIP=llvm-strip \
-              OBJCOPY=llvm-objcopy \
-              OBJDUMP=llvm-objdump \
-              READELF=llvm-readelf \
-              HOSTCC=clang \
-              HOSTCXX=clang++ \
-              HOSTAR=llvm-ar \
-              HOSTLD=ld.lld \
-              LLVM=1 \
-              LLVM_IAS=1
+              make -j$(nproc --all) \
+                  O=out \
+                  ARCH=${arch} \
+                  SUBARCH=arm64 \
+                  DTC_EXT=dtc \
+                  CC=clang \
+                  CLANG_TRIPLE=aarch64-linux-gnu- \
+                  CROSS_COMPILE=aarch64-linux-gnu- \
+                  CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+                  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+                  LD=ld.lld \
+                  AR=llvm-ar \
+                  NM=llvm-nm \
+                  STRIP=llvm-strip \
+                  OBJCOPY=llvm-objcopy \
+                  OBJDUMP=llvm-objdump \
+                  READELF=llvm-readelf \
+                  HOSTCC=clang \
+                  HOSTCXX=clang++ \
+                  HOSTAR=llvm-ar \
+                  HOSTLD=ld.lld \
+                  LLVM=1 \
+                  LLVM_IAS=1
           }
 
           completion() {
-            cd "${objdir}"
-            compiled_image="arch/arm64/boot/Image"
-            compiled_dtbo="arch/arm64/boot/dtbo.img"
+              cd "${objdir}"
+              compiled_image="arch/arm64/boot/Image"
+              compiled_dtbo="arch/arm64/boot/dtbo.img"
 
-            git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
-            cp "${compiled_image}" "${{ github.workspace }}"
-            cp "${compiled_dtbo}" "${{ github.workspace }}"
+              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+              cp "${compiled_image}" "${{ github.workspace }}"
+              cp "${compiled_dtbo}" "${{ github.workspace }}"
 
-            mv -f "${compiled_image}" "$anykernel/Image"
-            mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
-            cat arch/arm64/boot/dts/qcom/*.dtb > "$anykernel/dtb"
-            cd "$anykernel"
-            zip -r AnyKernel.zip *
-            mv -- "AnyKernel.zip" "$zip_name"
-            mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
-            rm -rf "$anykernel"
-            end=$(date +"%s")
-            diff=$((end - start))
-            echo -e "BUILD COMPLETED IN ${diff} SECONDS"
+              mv -f "${compiled_image}" "$anykernel/Image"
+              mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+              cat arch/arm64/boot/dts/qcom/*.dtb > "$anykernel/dtb"
+              cd "$anykernel"
+              zip -r AnyKernel.zip *
+              mv -- "AnyKernel.zip" "$zip_name"
+              mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
+              rm -rf "$anykernel"
+              end=$(date +"%s")
+              diff=$((end - start))
+              echo -e "BUILD COMPLETED IN ${diff} SECONDS"
           }
 
           make_defconfig
@@ -170,11 +172,10 @@ jobs:
 
           cd "${{ github.workspace }}"
 
-          # Set-up file info
           zip_file=$(find . -name '${{ github.event.inputs.KERNEL_NAME }}*.zip' -print -quit)
           echo "ZIP_FILE=$zip_file" >> $GITHUB_ENV
           echo "ZIP_NAME=$(basename "$zip_file" .zip)" >> $GITHUB_ENV
-          echo "RELEASE_DATE=$(date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
+          echo "RELEASE_DATE=$(TZ='Asia/Kuala_Lumpur' date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
           echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
           echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
 
