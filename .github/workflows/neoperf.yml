@@ -188,4 +188,15 @@ jobs:
 
         continue-on-error: false
 
-      - name: Upload files to
+      - name: Upload files to repository releases page
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ github.workspace }}/*.dtb
+            ${{ env.ZIP_FILE }}
+            ${{ env.DTBO }}
+            ${{ env.IMAGE }}
+          name: ${{ env.ZIP_NAME }}
+          tag_name: ${{ github.run_id }}
+          body: |
+            Released on ${{ env.RELEASE_DATE }}
