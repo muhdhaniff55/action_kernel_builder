@@ -123,7 +123,7 @@ jobs:
 
           make_defconfig() {
               start=$(date +"%s")
-              make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
+              make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} WERROR=0 -j$(nproc --all)
           }
 
           compile() {
@@ -151,8 +151,7 @@ jobs:
                   HOSTAR=llvm-ar \
                   HOSTLD=ld.lld \
                   LLVM=1 \
-                  LLVM_IAS=1
-                  WERROR=0 
+                  LLVM_IAS=1 
           }
 
           completion() {
