@@ -152,8 +152,7 @@ jobs:
                   HOSTLD=ld.lld \
                   LLVM=1 \
                   LLVM_IAS=1
-                  WERROR=0 \
-                  CFLAGS="-w"
+                  WERROR=0 
           }
 
           completion() {
