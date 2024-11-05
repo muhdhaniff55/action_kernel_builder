@@ -27,6 +27,10 @@ on:
         description: "Clone URL of your AnyKernel including branch"
         required: true
         default: 'https://github.com/GXC2356/AnyKernel3.git -b master'
+      APATCH:
+        description: "Apatch Configuration setup"
+        required: false
+        default: 'true'
       KERNELSU:
         description: "KernelSU setup"
         required: false
@@ -73,6 +77,12 @@ jobs:
             git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
           fi
 
+      - name: Apatch Configuration
+        if: ${{ github.event.inputs.APATCH == 'true' }}
+        run: |
+          echo -e "CONFIG_KALLSYMS=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+          echo -e "CONFIG_KALLSYMS_ALL=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
+          
       - name: KernelSU Setup
         if: ${{ github.event.inputs.KERNELSU == 'true' }}
         run: |
