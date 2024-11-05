@@ -78,7 +78,7 @@ jobs:
           fi
 
       - name: KernelSU Setup
-        if: ${{ github.event.inputs.KERNELSU == 'true' }}
+        if: ${{ github.event.inputs.KERNELSU == 'Enable' }}
         run: |
           if [ -d "./KernelSU" ]; then
             rm -rf "./KernelSU"
