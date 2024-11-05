@@ -50,6 +50,7 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/*
           sudo apt-get update
+          sudo apt-get upgrade
           sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
           sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
@@ -82,7 +83,7 @@ jobs:
         run: |
           echo -e "CONFIG_KALLSYMS=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
           echo -e "CONFIG_KALLSYMS_ALL=y" >> arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-          
+
       - name: KernelSU Setup
         if: ${{ github.event.inputs.KERNELSU == 'true' }}
         run: |
@@ -122,58 +123,51 @@ jobs:
           export PATH="${clang_dir}/bin:$PATH"
 
           make_defconfig() {
-              start=$(date +"%s")
-              make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} WERROR=0 -j$(nproc --all)
+            start=$(date +"%s")
+            make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} WERROR=0 -j$(nproc --all)
           }
 
           compile() {
-              cd "${{ github.workspace }}"
+            cd "${{ github.workspace }}"
 
-              make -j$(nproc --all) \
-                  O=out \
-                  ARCH=${arch} \
-                  SUBARCH=arm64 \
-                  DTC_EXT=dtc \
-                  CC=clang \
-                  CLANG_TRIPLE=aarch64-linux-gnu- \
-                  CROSS_COMPILE=aarch64-linux-gnu- \
-                  CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-                  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-                  LD=ld.lld \
-                  AR=llvm-ar \
-                  NM=llvm-nm \
-                  STRIP=llvm-strip \
-                  OBJCOPY=llvm-objcopy \
-                  OBJDUMP=llvm-objdump \
-                  READELF=llvm-readelf \
-                  HOSTCC=clang \
-                  HOSTCXX=clang++ \
-                  HOSTAR=llvm-ar \
-                  HOSTLD=ld.lld \
-                  LLVM=1 \
-                  LLVM_IAS=1 
+            make -j$(nproc --all) \
+              O=out \
+              ARCH=${arch} \
+              SUBARCH=arm64 \
+              DTC_EXT=dtc \
+              CC=clang \
+              CLANG_TRIPLE=aarch64-linux-gnu- \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+              AR=llvm-ar \
+              LLVM_NM=llvm-nm \
+              OBJCOPY=llvm-objcopy \
+              LD=ld.lld NM=llvm-nm \
+              LLVM=1 \
+              LLVM_IAS=1
           }
 
           completion() {
-              cd "${objdir}"
-              compiled_image="arch/arm64/boot/Image"
-              compiled_dtbo="arch/arm64/boot/dtbo.img"
+            cd "${objdir}"
+            compiled_image="arch/arm64/boot/Image"
+            compiled_dtbo="arch/arm64/boot/dtbo.img"
 
-              git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
-              cp "${compiled_image}" "${{ github.workspace }}"
-              cp "${compiled_dtbo}" "${{ github.workspace }}"
+            git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+            cp "${compiled_image}" "${{ github.workspace }}"
+            cp "${compiled_dtbo}" "${{ github.workspace }}"
 
-              mv -f "${compiled_image}" "$anykernel/Image"
-              mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
-              cat arch/arm64/boot/dts/qcom/*.dtb > "$anykernel/dtb"
-              cd "$anykernel"
-              zip -r AnyKernel.zip *
-              mv -- "AnyKernel.zip" "$zip_name"
-              mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
-              rm -rf "$anykernel"
-              end=$(date +"%s")
-              diff=$((end - start))
-              echo -e "BUILD COMPLETED IN ${diff} SECONDS"
+            mv -f "${compiled_image}" "$anykernel/Image"
+            mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
+            cat arch/arm64/boot/dts/qcom/*.dtb > "$anykernel/dtb"
+            cd "$anykernel"
+            zip -r AnyKernel.zip *
+            mv -- "AnyKernel.zip" "$zip_name"
+            mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
+            rm -rf "$anykernel"
+            end=$(date +"%s")
+            diff=$((end - start))
+            echo -e "BUILD COMPLETED IN ${diff} SECONDS"
           }
 
           make_defconfig
