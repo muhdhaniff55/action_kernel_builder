@@ -30,7 +30,11 @@ on:
       KERNELSU:
         description: "KernelSU setup"
         required: false
-        default: 'false'
+        type: choice
+        options:
+          - "Enable"
+          - "Disable"
+        default: "Enable"
 
 jobs:
   Kernel:
