@@ -69,6 +69,10 @@ jobs:
             git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
           fi
 
+      - name: Cloning libufdt
+        run: |
+          git clone https://android.googlesource.com/platform/system/libufdt ${{ github.workspace }}/libufdt
+          
       - name: Set-up Cache
         id: cache-out
         uses: actions/cache@v4
@@ -81,6 +85,8 @@ jobs:
           objdir="${{ github.workspace }}/out"
           anykernel="${{ github.workspace }}/anykernel"
           clang_dir="${{ github.workspace }}/toolchain"
+          MKDTBOIMG="${{ github.workspace }}/libufdt/utils/src/mkdtboimg.py"
+          DTBO="${{ github.workspace }}/DTBO"
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
@@ -137,6 +143,7 @@ jobs:
             mv -- "AnyKernel.zip" "$zip_name"
             mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
             rm -rf "$anykernel"
+            python3 $MKDTBOIMG create $DTBO/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
             end=$(date +"%s")
             diff=$((end - start))
             echo -e "BUILD COMPLETED IN ${diff} SECONDS"
