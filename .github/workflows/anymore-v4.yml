@@ -144,7 +144,7 @@ jobs:
             mv -- "$anykernel/$zip_name" "${{ github.workspace }}/$zip_name"
             rm -rf "$anykernel"
             mkdir -p $DTBODIR
-            python3 $MKDTBOIMG create $DTBODIR/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
+            python3 $MKDTBOIMG create $DTBODIR/dtbo.img --page_size=4096 arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
             end=$(date +"%s")
             diff=$((end - start))
             echo -e "BUILD COMPLETED IN ${diff} SECONDS"
