@@ -22,7 +22,7 @@ on:
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
-        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r530567.git -b 14.0'
+        default: 'https://raw.githubusercontent.com/ZyCromerZ/Clang/main/Clang-main-link.txt'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
@@ -102,8 +102,8 @@ jobs:
             cd "${{ github.workspace }}"
               
             make -j$(nproc --all) \
-              O=out \
-              ARCH=${arch} \
+              O="${objdir}" \
+              ARCH="${arch}" \
               SUBARCH=arm64 \
               DTC_EXT=dtc \
               CC=clang \
