@@ -54,19 +54,20 @@ jobs:
       - name: Cloning libufdt
         run: |
           git clone https://android.googlesource.com/platform/system/libufdt ${{ github.workspace }}/libufdt
-          
-      - name: GCC Shit
+
+      - name: GCC Setup
         run: |
           mkdir -p ${{ github.workspace }}/GCC64
           mkdir -p ${{ github.workspace }}/GCC32
 
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/961622e926a1b21382dba4dd9fe0e5fb3ee5ab7c.tar.gz -O gcc-aarch64.tar.gz
-            tar -xzf gcc-aarch64.tar.gz -C ${{ github.workspace }}/GCC64
-            rm gcc-aarch64.tar.gz
+          tar -xzf gcc-aarch64.tar.gz -C ${{ github.workspace }}/GCC64
+          rm gcc-aarch64.tar.gz
+
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/cb7b3ac1b7fdb49474ff68761909934d1142f594.tar.gz -O gcc-arm.tar.gz
-            tar -xzf gcc-arm.tar.gz -C ${{ github.workspace }}/GCC32
-            rm gcc-arm.tar.gz
-          
+          tar -xzf gcc-arm.tar.gz -C ${{ github.workspace }}/GCC32
+          rm gcc-arm.tar.gz
+
       - name: Cloning Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
@@ -140,17 +141,30 @@ jobs:
               $1
           }
 
+          miui() {
+            sed -i 's/<70>/<695>/g'   $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
+            sed -i 's/<154>/<1546>/g' $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
+            sed -i 's/<70>/<695>/g'   $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
+            sed -i 's/<154>/<1546>/g' $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
+          }
+
+          sdk() {
+            git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
+            python3 $MKDTBOIMG create $ANYKERNEL/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
+          }
+
+          restore() {
+            git restore $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
+            git restore $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
+          }
+
           completion() {
             cd "${objdir}"
             compiled_image="arch/arm64/boot/Image"
-            compiled_dtbo="arch/arm64/boot/dtbo.img"
 
             git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
             cp "${compiled_image}" "${{ github.workspace }}"
-            cp "${compiled_dtbo}" "${{ github.workspace }}"
-
             mv -f "${compiled_image}" "$anykernel/Image"
-            mv -f "${compiled_dtbo}" "$anykernel/dtbo.img"
             cat arch/arm64/boot/dts/qcom/sm8150-v2*.dtb > "$anykernel/dtb"
             cd "$anykernel"
             zip -r AnyKernel.zip *
@@ -190,3 +204,4 @@ jobs:
           tag_name: ${{ github.run_id }}
           body: |
             Released on ${{ env.RELEASE_DATE }}
+
