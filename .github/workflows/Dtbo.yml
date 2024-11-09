@@ -7,7 +7,7 @@ jobs:
   Kernel:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Use specific permissions based on your needs
+      contents: write-all  # Use specific permissions based on your needs
     defaults:
       run:
         shell: bash
