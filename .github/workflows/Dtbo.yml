@@ -44,13 +44,13 @@ jobs:
               MKDTBOIMG="${{ github.workspace }}/libufdt/utils/src/mkdtboimg.py"       
 
               dtbo() {
-                python3 $MKDTBOIMG create $ANYKERNEL/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
+                python3 $MKDTBOIMG create $anykernel/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
               }
 
               dtbo
               
               cd "${{ github.workspace }}"
-              echo "DTBO=$ANYKERNEL/dtbo.img" >> $GITHUB_ENV
+              echo "DTBO=$anykernel/dtbo.img" >> $GITHUB_ENV
 
       - name: Upload files to repository releases page
         uses: softprops/action-gh-release@v2
