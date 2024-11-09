@@ -57,6 +57,9 @@ jobs:
           
       - name: GCC Shit
         run: |
+          mkdir -p ${{ github.workspace }}/GCC64
+          mkdir -p ${{ github.workspace }}/GCC32
+
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/961622e926a1b21382dba4dd9fe0e5fb3ee5ab7c.tar.gz -O gcc-aarch64.tar.gz
             tar -xzf gcc-aarch64.tar.gz -C ${{ github.workspace }}/GCC64
             rm gcc-aarch64.tar.gz
