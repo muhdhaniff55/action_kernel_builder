@@ -6,11 +6,11 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/muhdhaniff55/android_kernel_xiaomi_vayu_lineage.git'
+        default: 'https://github.com/AnymoreProject/android_kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'modi'
+        default: 'lineage-20'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
