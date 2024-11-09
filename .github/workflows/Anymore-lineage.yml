@@ -102,7 +102,6 @@ jobs:
 
           compile() {
             cd "${{ github.workspace }}"
-
             make -j$(nproc --all) \
               O="${objdir}" \
               ARCH="${arch}" \
@@ -166,9 +165,9 @@ jobs:
 
           make_defconfig
           compile
-	  miui
+          miui
           sdk
-	  restore
+          restore
           completion
 
           cd "${{ github.workspace }}"
