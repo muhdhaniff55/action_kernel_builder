@@ -58,10 +58,10 @@ jobs:
       - name: GCC Shit
         run: |
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/961622e926a1b21382dba4dd9fe0e5fb3ee5ab7c.tar.gz -o gcc-aarch64.tar.gz
-            tar -xzf gcc-aarch64.tar.gz -C ${{ github.workspace }}/GCC64
+            tar -xf gcc-aarch64.tar.gz -C ${{ github.workspace }}/GCC64
             rm gcc-aarch64.tar.gz
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/cb7b3ac1b7fdb49474ff68761909934d1142f594.tar.gz -o gcc-arm.tar.gz
-            tar -xzf gcc-arm.tar.gz -C ${{ github.workspace }}/GCC32
+            tar -xf gcc-arm.tar.gz -C ${{ github.workspace }}/GCC32
             rm gcc-arm.tar.gz
           
       - name: Cloning Toolchain
