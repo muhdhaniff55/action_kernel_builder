@@ -96,14 +96,16 @@ jobs:
           objdir="${{ github.workspace }}/out"
           anykernel="${{ github.workspace }}/anykernel"
           clang_dir="${{ github.workspace }}/toolchain"
-          MKDTBOIMG="/workspace/jale/libufdt/utils/src/mkdtboimg.py"
+          MKDTBOIMG="${{ github.workspace }}/libufdt/utils/src/mkdtboimg.py"
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
+          GCC64_DIR="${{ github.workspace }}/GCC64"
+          GCC32_DIR="${{ github.workspace }}/GCC32"
           export KBUILD_BUILD_HOST=Newehh
           export KBUILD_BUILD_USER=home
 
-          export PATH="${clang_dir}/bin:$PATH"
+          export PATH="${clang_dir}/bin:$GCC64_DIR/bin:$GCC32_DIR/bin:$PATH"
 
           make_defconfig() {
             start=$(date +"%s")
