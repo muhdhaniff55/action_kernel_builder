@@ -44,7 +44,7 @@ jobs:
               MKDTBOIMG="${{ github.workspace }}/libufdt/utils/src/mkdtboimg.py"       
 
               dtbo() {
-                python3 $MKDTBOIMG create $anykernel/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
+                python3 $MKDTBOIMG create $anykernel/dtbo.img --page_size=4096 arch/arm64/boot/dts/qcom/
               }
 
               dtbo
