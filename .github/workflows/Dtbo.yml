@@ -48,6 +48,17 @@ jobs:
               }
 
               dtbo
-
+              
+              cd "${{ github.workspace }}"
               echo "DTBO=$ANYKERNEL/dtbo.img" >> $GITHUB_ENV
+
+      - name: Upload files to repository releases page
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.DTBO }}
+          name: DTBO TEST
+          tag_name: ${{ github.run_id }}
+          body: |
+            BEDAL
           
