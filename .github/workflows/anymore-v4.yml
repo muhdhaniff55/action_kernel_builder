@@ -6,15 +6,15 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/AnymoreProject/kernel_xiaomi_vayu_upstream.git'
+        default: 'https://github.com/muhdhaniff55/android_kernel_xiaomi_vayu_lineage.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'main'
+        default: 'modi'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
-        default: 'Anymore'
+        default: 'Anymore+'
       CONFIG_FILE:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
@@ -90,8 +90,6 @@ jobs:
           export KBUILD_BUILD_USER=home
 
           export PATH="${clang_dir}/bin:$PATH"
-
-          export KBUILD_CFLAGS="-O2"
           
           make_defconfig() {
             start=$(date +"%s")
