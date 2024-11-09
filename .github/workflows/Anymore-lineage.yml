@@ -51,6 +51,10 @@ jobs:
         run: |
           git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
+      - name: Cloning libufdt
+        run: |
+          git clone https://android.googlesource.com/platform/system/libufdt ${{ github.workspace }}/libufdt
+          
       - name: Cloning Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
@@ -119,6 +123,25 @@ jobs:
               LLVM=1 \
               LLVM_IAS=1
           }
+
+          miui() 
+{
+    sed -i 's/<70>/<695>/g'   $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
+    sed -i 's/<154>/<1546>/g' $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
+    sed -i 's/<70>/<695>/g'   $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
+    sed -i 's/<154>/<1546>/g' $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
+}
+sdk()
+{
+    python3 $MKDTBOIMG create $ANYKERNEL/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
+    find out/arch/arm64/boot/dts/qcom -name 'sm8150-v2*.dtb' -exec cat {} + > $ANYKERNEL/dtb
+	python3 $MKDTBOIMG create $ANYKERNEL/dtbo-miui.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
+}
+restore()
+{
+	git restore $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
+	git restore $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
+}
 
           completion() {
             cd "${objdir}"
