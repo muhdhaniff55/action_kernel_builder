@@ -1,0 +1,53 @@
+name: DTBO
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Kernel:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Use specific permissions based on your needs
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - name: Set up environment
+        run: |
+          # Clean the workspace
+          rm -rf ${{ github.workspace }}/*
+          
+          # Update and install necessary packages
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
+          sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev python3
+          sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
+          sudo apt-get install -y device-tree-compiler
+
+      - name: Cloning Kernel Source
+        run: |
+          git clone --single-branch --depth=1 --no-tags https://github.com/muhdhaniff55/android_kernel_xiaomi_vayu_lineage.git -b modi ${{ github.workspace }}
+          
+      - name: Cloning libufdt
+        run: |
+          git clone https://android.googlesource.com/platform/system/libufdt ${{ github.workspace }}/libufdt
+          
+      - name: Clone Anykernel
+        run: |
+          git clone -q https://github.com/muhdhaniff55/AnyKernel3.git -b anothermaster ${{ github.workspace }}/anykernel
+          
+      - name: Start Compilation
+        run: |
+              anykernel="${{ github.workspace }}/anykernel"
+              MKDTBOIMG="${{ github.workspace }}/libufdt/utils/src/mkdtboimg.py"       
+
+              dtbo() {
+                python3 $MKDTBOIMG create $ANYKERNEL/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
+              }
+
+              dtbo
+
+              echo "DTBO=$ANYKERNEL/dtbo.img" >> $GITHUB_ENV
+          
