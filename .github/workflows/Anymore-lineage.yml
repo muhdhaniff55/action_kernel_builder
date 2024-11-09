@@ -54,7 +54,7 @@ jobs:
       - name: Cloning libufdt
         run: |
           git clone https://android.googlesource.com/platform/system/libufdt ${{ github.workspace }}/libufdt
-          
+
       - name: Cloning Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
@@ -83,7 +83,7 @@ jobs:
       - name: Start Compilation
         run: |
           export TZ='Asia/Kuala_Lumpur'
-          
+
           objdir="${{ github.workspace }}/out"
           anykernel="${{ github.workspace }}/anykernel"
           clang_dir="${{ github.workspace }}/toolchain"
@@ -94,7 +94,7 @@ jobs:
           export KBUILD_BUILD_USER=home
 
           export PATH="${clang_dir}/bin:$PATH"
-          
+
           make_defconfig() {
             start=$(date +"%s")
             make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
@@ -102,7 +102,7 @@ jobs:
 
           compile() {
             cd "${{ github.workspace }}"
-              
+
             make -j$(nproc --all) \
               O="${objdir}" \
               ARCH="${arch}" \
@@ -124,24 +124,23 @@ jobs:
               LLVM_IAS=1
           }
 
-          miui() 
-{
-    sed -i 's/<70>/<695>/g'   $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
-    sed -i 's/<154>/<1546>/g' $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
-    sed -i 's/<70>/<695>/g'   $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
-    sed -i 's/<154>/<1546>/g' $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
-}
-sdk()
-{
-    python3 $MKDTBOIMG create $ANYKERNEL/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
-    find out/arch/arm64/boot/dts/qcom -name 'sm8150-v2*.dtb' -exec cat {} + > $ANYKERNEL/dtb
-	python3 $MKDTBOIMG create $ANYKERNEL/dtbo-miui.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
-}
-restore()
-{
-	git restore $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
-	git restore $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
-}
+          miui() {
+            sed -i 's/<70>/<695>/g' $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
+            sed -i 's/<154>/<1546>/g' $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
+            sed -i 's/<70>/<695>/g' $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
+            sed -i 's/<154>/<1546>/g' $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
+          }
+
+          sdk() {
+            python3 $MKDTBOIMG create $ANYKERNEL/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
+            find out/arch/arm64/boot/dts/qcom -name 'sm8150-v2*.dtb' -exec cat {} + > $ANYKERNEL/dtb
+            python3 $MKDTBOIMG create $ANYKERNEL/dtbo-miui.img --page_size=4096 out/arch/arm64/boot/dts/qcom/vayu-sm8150-overlay.dtbo
+          }
+
+          restore() {
+            git restore $DISPLAY/dsi-panel-j20s-36-02-0a-lcd-dsc-vid.dtsi
+            git restore $DISPLAY/dsi-panel-j20s-42-02-0b-lcd-dsc-vid.dtsi
+          }
 
           completion() {
             cd "${objdir}"
@@ -167,6 +166,9 @@ restore()
 
           make_defconfig
           compile
+	  miui
+          sdk
+	  restore
           completion
 
           cd "${{ github.workspace }}"
