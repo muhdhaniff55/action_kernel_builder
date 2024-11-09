@@ -87,6 +87,8 @@ jobs:
           objdir="${{ github.workspace }}/out"
           anykernel="${{ github.workspace }}/anykernel"
           clang_dir="${{ github.workspace }}/toolchain"
+          MKDTBOIMG="${{ github.workspace }}/libufdt/utils/src/mkdtboimg.py"
+          DISPLAY="arch/arm64/boot/dts/qcom/xiaomi/overlay/common/display"
           kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
           zip_name="${kernel_name}-$(date +"%d-%m-%Y").zip"
           arch="arm64"
