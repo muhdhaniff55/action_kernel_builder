@@ -51,6 +51,10 @@ jobs:
         run: |
           git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
+      - name: Cloning libufdt
+        run: |
+          git clone https://android.googlesource.com/platform/system/libufdt ${{ github.workspace }}/libufdt
+          
       - name: Cloning Toolchain
         run: |
           TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
