@@ -100,7 +100,7 @@ jobs:
             cd "${{ github.workspace }}"
               
             make -j$(nproc --all) \
-              O="${objdir}" \
+              O=out \
               ARCH="${arch}" \
               SUBARCH=arm64 \
               DTC_EXT=dtc \
