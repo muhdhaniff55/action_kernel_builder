@@ -155,7 +155,7 @@ jobs:
           echo "DTBO=${{ github.workspace }}/dtbo.img" >> $GITHUB_ENV
           echo "IMAGE=${{ github.workspace }}/Image" >> $GITHUB_ENV
 
-        continue-on-error: false
+        continue-on-error: true
 
       - name: Upload files to repository releases page
         uses: softprops/action-gh-release@v2
