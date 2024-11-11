@@ -51,14 +51,21 @@ jobs:
 
       - name: Set-up Toolchain
         run: |
-         if [[ "${{ github.event.inputs.TOOLCHAIN_URL }}" == *.tar.gz ]]; then
-             wget -O clang-toolchain.tar.gz "${{ github.event.inputs.TOOLCHAIN_URL }}"
-             mkdir -p ${{ github.workspace }}/toolchain
-             tar -xzf clang-toolchain.tar.gz -C ${{ github.workspace }}/toolchain
-             rm -f clang-toolchain.tar.gz
-         else
-             git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
-         fi
+         TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
+          mkdir -p ${{ github.workspace }}/toolchain
+
+          if [[ $TOOLCHAIN_URL == *.txt ]]; then
+            actual_url=$(curl -s "$TOOLCHAIN_URL")
+            curl -L "$actual_url" -o toolchain.tar.gz
+            tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
+            rm toolchain.tar.gz
+          elif [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.tar.bz2 || "$TOOLCHAIN_URL" == *.tar.xz ]]; then
+            curl -L "$TOOLCHAIN_URL" -o toolchain.tar.gz
+            tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
+            rm toolchain.tar.gz
+          else
+            git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
+          fi
          
       - name: Start Compilation
         run: |
@@ -124,8 +131,8 @@ jobs:
                   cp -f "${compiled_dtbo}" "$output_dir/dtbo.img" || true
               fi
               
-              if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
-                  cp -f ${qcom_dtb}/*.dtb "$output_dir" || true
+              if ls ${qcom_dtb}/sm8150-v2*.dtb 1> /dev/null 2>&1; then
+                  cp -f ${qcom_dtb}/sm8150-v2*.dtb "$output_dir" || true
               fi
 
               cd "$anykernel"
@@ -155,7 +162,7 @@ jobs:
         continue-on-error: false
 
       - name: Upload files to repository releases page
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             ${{ github.workspace }}/compiled/*
