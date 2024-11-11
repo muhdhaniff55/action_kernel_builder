@@ -133,8 +133,8 @@ jobs:
                   cp -f "${compiled_dtbo}" "$output_dir/dtbo.img" || true
               fi
               
-              if ls ${qcom_dtb}/sm8150-v2*.dtb 1> /dev/null 2>&1; then
-                  cp -f ${qcom_dtb}/sm8150-v2*.dtb "$output_dir" || true
+              if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
+                  cp -f ${qcom_dtb}/*.dtb "$output_dir" || true
               fi
 
               cd "$anykernel"
