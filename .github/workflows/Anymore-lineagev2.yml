@@ -75,6 +75,8 @@ jobs:
          kernel_name="${{ github.event.inputs.KERNEL_NAME }}"
          zip_name="${kernel_name}-$(date +"%d-%m-%Y-%H%M").zip"
          output_dir=${{ github.workspace }}/compiled
+         export KBUILD_BUILD_HOST=Newehh
+         export KBUILD_BUILD_USER=home
          
          export PATH="${clang_dir}/bin:$PATH"
          
@@ -157,7 +159,7 @@ jobs:
          # Set-up file info
          zip_file=$(find $output_dir -name '${{ github.event.inputs.KERNEL_NAME }}*.zip' -print -quit)
          echo "ZIP_NAME=$(basename "$zip_file" .zip)" >> $GITHUB_ENV
-         echo "RELEASE_DATE=$(date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
+         echo "RELEASE_DATE=$(TZ='Asia/Kuala_Lumpur' date +'%B %-d, %Y %H:%M')" >> $GITHUB_ENV
 
         continue-on-error: false
 
