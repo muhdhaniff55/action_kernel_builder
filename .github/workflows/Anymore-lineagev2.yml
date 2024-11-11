@@ -112,7 +112,8 @@ jobs:
             compiled_gz_image="arch/arm64/boot/Image.gz"
             compiled_gz_dtb="arch/arm64/boot/Image.gz-dtb"
             compiled_dtbo="arch/arm64/boot/dtbo.img"
-            qcom_dtb="arch/arm64/boot/dts/vendor/qcom"
+            qcom_dtb1="arch/arm64/boot/dts/qcom"
+            qcom_dtb2="arch/arm64/boot/dts/vendor/qcom"
            
          if [[ -f ${compiled_image} || -f ${compiled_gz_image} || -f ${compiled_gz_dtb} ]]; then
               git clone -q ${{ github.event.inputs.ANYKERNEL }} "$anykernel"
@@ -133,8 +134,12 @@ jobs:
                   cp -f "${compiled_dtbo}" "$output_dir/dtbo.img" || true
               fi
               
-              if ls ${qcom_dtb}/*.dtb 1> /dev/null 2>&1; then
-                  cp -f ${qcom_dtb}/*.dtb "$output_dir" || true
+           # Try first directory
+              if ls ${qcom_dtb1}/*.dtb 1> /dev/null 2>&1; then
+                 cp -f ${qcom_dtb1}/*.dtb "$output_dir" || true
+           # If no files in first, try the second directory
+              elif ls ${qcom_dtb2}/*.dtb 1> /dev/null 2>&1; then
+                cp -f ${qcom_dtb2}/*.dtb "$output_dir" || true
               fi
 
               cd "$anykernel"
