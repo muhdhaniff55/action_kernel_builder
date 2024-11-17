@@ -6,11 +6,11 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/mkcs121/android_kernel_xiaomi_vayu.git'
+        default: 'https://github.com/muhdhaniff55/android_kernel_xiaomi_vayu.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'stock'
+        default: 'stock-modi'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
@@ -70,19 +70,6 @@ jobs:
             git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
           fi
           
-      - name: KernelSU Setup
-        run: |
-          if [ -d "./KernelSU" ]; then
-            rm -rf "./KernelSU"
-          fi
-          if [ -d "./drivers/kernelsu" ]; then
-            rm -rf "./drivers/kernelsu"
-          fi
-
-          sed -i '/^CONFIG_KPROBES=/s/.*/#CONFIG_KPROBES is not set/' arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-          sed -i '/^CONFIG_HAVE_KPROBES=/s/.*/#CONFIG_HAVE_KPROBES is not set/' arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-          sed -i '/^CONFIG_KPROBE_EVENTS=/s/.*/#CONFIG_KPROBE_EVENTS is not set/' arch/arm64/configs/${{ github.event.inputs.CONFIG_FILE }}
-
       - name: Set-up Cache
         id: cache-out
         uses: actions/cache@v4
