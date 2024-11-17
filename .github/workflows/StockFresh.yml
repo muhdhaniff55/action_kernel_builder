@@ -19,6 +19,10 @@ on:
         description: 'Config file (You can put multiple configs separated by space)'
         required: true
         default: 'vayu_user_defconfig'
+      TOOLCHAIN_URL:
+        description: "Clone URL of your toolchain or tarball URL"
+        required: true
+        default: 'https://raw.githubusercontent.com/ZyCromerZ/Clang/main/Clang-main-link.txt'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
@@ -48,6 +52,24 @@ jobs:
         run: |
           git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
+      - name: Cloning Toolchain
+        run: |
+          TOOLCHAIN_URL="${{ github.event.inputs.TOOLCHAIN_URL }}"
+          mkdir -p ${{ github.workspace }}/toolchain
+
+          if [[ $TOOLCHAIN_URL == *.txt ]]; then
+            actual_url=$(curl -s "$TOOLCHAIN_URL")
+            curl -L "$actual_url" -o toolchain.tar.gz
+            tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
+            rm toolchain.tar.gz
+          elif [[ "$TOOLCHAIN_URL" == *.tar.gz || "$TOOLCHAIN_URL" == *.tar.bz2 || "$TOOLCHAIN_URL" == *.tar.xz ]]; then
+            curl -L "$TOOLCHAIN_URL" -o toolchain.tar.gz
+            tar -xzf toolchain.tar.gz -C ${{ github.workspace }}/toolchain
+            rm toolchain.tar.gz
+          else
+            git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.TOOLCHAIN_URL }} ${{ github.workspace }}/toolchain
+          fi
+          
       - name: KernelSU Setup
         run: |
           if [ -d "./KernelSU" ]; then
@@ -79,6 +101,8 @@ jobs:
           arch="arm64"
           export KBUILD_BUILD_HOST=Newehh
           export KBUILD_BUILD_USER=home
+
+          export PATH="${clang_dir}/bin:$PATH"
 
           make_defconfig() {
               start=$(date +"%s")
