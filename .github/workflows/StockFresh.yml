@@ -79,8 +79,6 @@ jobs:
           export KBUILD_BUILD_HOST=Newehh
           export KBUILD_BUILD_USER=home
 
-          export PATH="${clang_dir}/bin:$PATH"
-
           make_defconfig() {
               start=$(date +"%s")
               make -s ARCH=${arch} O=${objdir} ${{ github.event.inputs.CONFIG_FILE }} -j$(nproc --all)
