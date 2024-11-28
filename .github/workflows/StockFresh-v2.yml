@@ -53,11 +53,14 @@ jobs:
 
       - name: Download and build GCC 14
         run: |
+         # Create a directory to store the GCC source code
+          mkdir -p ${{ github.workspace }}/gcc
+
          # Download GCC 14 source code
-         
-         mkdir -p ${{ github.workspace }}/gcc
-          curl https://ftp.gnu.org/gnu/gcc/gcc-14.2.0/gcc-14.2.0.tar.gz -O gcc.tar.gz ${{ github.workspace }}/gcc
-          tar -xvzf gcc.tar.gz
+          curl -L https://ftp.gnu.org/gnu/gcc/gcc-14.2.0/gcc-14.2.0.tar.gz -o ${{ github.workspace }}/gcc/gcc.tar.gz
+
+         # Extract the tarball
+          tar -xvzf ${{ github.workspace }}/gcc/gcc.tar.gz -C ${{ github.workspace }}/gcc
         
       - name: Cloning Toolchain
         run: |
