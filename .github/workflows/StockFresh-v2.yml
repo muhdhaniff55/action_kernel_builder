@@ -52,16 +52,20 @@ jobs:
         run: |
           git clone --single-branch --depth=1 --no-tags ${{ github.event.inputs.KERNEL_SOURCE }} -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.workspace }}
 
-      - name: Download and build GCC 14
+      - name: Download and install GCC from source
         run: |
-         # Create a directory to store the GCC source code
-          mkdir -p ${{ github.workspace }}/gcc
-
-         # Download GCC 14 source code
-          curl -L https://ftp.gnu.org/gnu/gcc/gcc-14.2.0/gcc-14.2.0.tar.gz -o ${{ github.workspace }}/gcc/gcc.tar.gz
-
-         # Extract the tarball
-          tar -xvzf ${{ github.workspace }}/gcc/gcc.tar.gz -C ${{ github.workspace }}/gcc
+          GCC_VERSION=14.2.0  # Replace with the version you want
+          wget https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz
+          tar -xvf gcc-${GCC_VERSION}.tar.gz
+          cd gcc-${GCC_VERSION}
+          ./configure --prefix=/usr/local --enable-languages=c,c++
+          make -j$(nproc)
+          sudo make install
+        
+      - name: Check GCC version
+        run: |
+          gcc --version
+          g++ --version
         
       - name: Cloning Toolchain
         run: |
@@ -100,7 +104,7 @@ jobs:
           export KBUILD_BUILD_HOST=Newehh
           export KBUILD_BUILD_USER=home
 
-          export PATH="${{ github.workspace }}/gcc:${clang_dir}/bin:$PATH"
+          export PATH="${{ github.workspace }}/$GCC_VERSION:${{ github.workspace }}/toolchain/bin:$PATH"
 
           make_defconfig() {
               start=$(date +"%s")
