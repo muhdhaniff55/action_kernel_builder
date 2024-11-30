@@ -1,4 +1,4 @@
-name: StockFresh
+name: StockFresh Clang
 
 on:
   workflow_dispatch:
