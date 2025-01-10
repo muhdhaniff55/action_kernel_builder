@@ -6,11 +6,11 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel source URL'
         required: true
-        default: 'https://github.com/muhdhaniff55/android_kernel_xiaomi_vayu.git'
+        default: 'https://github.com/muhdhaniff55/android_kernel_xiaomi_vayu_ch.git'
       KERNEL_BRANCH:
         description: 'Kernel branch'
         required: true
-        default: 'stock-modi'
+        default: 'rebase'
       KERNEL_NAME:
         description: 'Kernel/zip name'
         required: true
@@ -22,15 +22,15 @@ on:
       TOOLCHAIN_URL:
         description: "Clone URL of your toolchain or tarball URL"
         required: true
-        default: 'https://raw.githubusercontent.com/XSans0/WeebX-Clang/main/main/link.txt'
+        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r530567.git -b 14.0'
       ANYKERNEL:
         description: "Clone URL of your AnyKernel including branch"
         required: true
-        default: 'https://github.com/GXC2356/AnyKernel3.git -b master'
+        default: 'https://github.com/muhdhaniff55/AnyKernel3.git -b anothermaster'
     
 jobs:
   Kernel:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions: write-all
     defaults:
       run:
@@ -42,9 +42,8 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/*
           sudo apt-get update
-          sudo apt-get upgrade
           sudo apt-get install -y build-essential bc lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libfl-dev llvm
-          sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python2 python2-dev
+          sudo apt-get install -y curl git ftp lftp wget libarchive-tools ccache python-is-python3
           sudo apt-get install -y zip unzip tar gzip bzip2 rar unrar cpio jq
           sudo apt-get install -y device-tree-compiler
 
